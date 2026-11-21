@@ -24,8 +24,12 @@ import { Icon } from '../core/icon';
         <nav class="nav-links" [class.mobile-open]="mobileOpen()" (click)="mobileOpen.set(false)" aria-label="Navigation principale">
           <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">Accueil</a>
           <a routerLink="/restaurants" routerLinkActive="active" class="nav-link">Restaurants</a>
-          @if (auth.user()) { <a routerLink="/commandes" routerLinkActive="active" class="nav-link">Mes commandes</a> }
-          @if (auth.user()?.role === 'restaurateur') { <a routerLink="/restaurateur" routerLinkActive="active" class="nav-link">Mon restaurant</a> }
+          <!-- Mes commandes : seulement pour le client -->
+          @if (auth.user()?.role === 'client') { <a routerLink="/commandes" routerLinkActive="active" class="nav-link">Mes commandes</a> }
+          <!-- Restaurateur : ses commandes reçues et la gestion de SON menu -->
+          @if (auth.user()?.role === 'restaurateur') { <a routerLink="/restaurateur" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">Mon restaurant</a> }
+          @if (auth.user()?.role === 'restaurateur') { <a routerLink="/restaurateur/menu" routerLinkActive="active" class="nav-link">Mon menu</a> }
+          <!-- Admin : administration seulement (il ne gère pas les menus des restaurants) -->
           @if (auth.user()?.role === 'admin') { <a routerLink="/admin" routerLinkActive="active" class="nav-link">Administration</a> }
         </nav>
 
@@ -34,7 +38,10 @@ import { Icon } from '../core/icon';
           <button type="button" class="icon-button" (click)="theme.toggle()" [attr.aria-label]="theme.theme() === 'dark' ? 'Mode clair' : 'Mode sombre'">
             @if (theme.theme() === 'dark') { <app-icon name="sun"></app-icon> } @else { <app-icon name="moon"></app-icon> }
           </button>
-          <a routerLink="/panier" class="icon-button cart-link" aria-label="Panier"><app-icon name="shopping-bag"></app-icon></a>
+          <!-- Panier : caché pour le restaurateur et l'admin (seul un client peut commander) -->
+          @if (auth.user()?.role !== 'restaurateur' && auth.user()?.role !== 'admin') {
+            <a routerLink="/panier" class="icon-button cart-link" aria-label="Panier"><app-icon name="shopping-bag"></app-icon></a>
+          }
           @if (auth.user()) {
             <button type="button" class="btn-ghost login-button" (click)="auth.logout()"><app-icon name="user"></app-icon><span class="login-label">Déconnexion</span></button>
           } @else {

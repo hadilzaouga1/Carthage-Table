@@ -95,10 +95,11 @@ export class Home implements OnInit {
   cuisine = signal('Tous');               // cuisine sélectionnée
 
   // Les noms (name) doivent correspondre aux valeurs de typeCuisine dans ta base
+    // Les noms (name) correspondent EXACTEMENT aux valeurs de typeCuisine dans la base de données
   cuisines = [
-    { name: 'Tous', label: 'Tous', icon: 'utensils' }, { name: 'Italien', label: 'Pizzas', icon: 'pizza' },
-    { name: 'Burger', label: 'Burgers', icon: 'sandwich' }, { name: 'Tunisien', label: 'Tunisien', icon: 'utensils' },
-    { name: 'Healthy', label: 'Healthy', icon: 'salad' }, { name: 'Dessert', label: 'Desserts', icon: 'cake-slice' }
+    { name: 'Tous', label: 'Tous', icon: 'utensils' }, { name: 'Pizza', label: 'Pizzas', icon: 'pizza' },
+    { name: 'Fast-food', label: 'Burgers', icon: 'sandwich' }, { name: 'Tunisien', label: 'Tunisien', icon: 'utensils' },
+    { name: 'Italien', label: 'Pâtes', icon: 'utensils' }, { name: 'Desserts', label: 'Desserts', icon: 'cake-slice' }
   ];
   slogans = ['Bon appétit, بالشفاء !', 'Du frais. Du bon. Du local.', 'Votre prochaine envie est ici.', 'La Tunisie à votre table.'];
   steps = [
@@ -114,7 +115,7 @@ export class Home implements OnInit {
   // Appel API : 3 restaurants maximum sur l'accueil
   private load() {
     const typeCuisine = this.cuisine() === 'Tous' ? undefined : this.cuisine();
-    this.service.list({ typeCuisine, limit: 3 }).subscribe({
+    this.service.list({ typeCuisine, limit: 6 }).subscribe({
       next: res => this.restaurants.set(res.restaurants),
       error: () => this.restaurants.set([])
     });

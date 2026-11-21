@@ -4,18 +4,27 @@ import Category from '../models/Category.js';
 import Dish from '../models/Dish.js';
 import { loadManagedRestaurant, httpError } from '../utils/ownership.js';
 
+// Protège la recherche : les caractères spéciaux sont neutralisés avant d'être utilisés dans une regex
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Champs qu'un restaurateur a le droit de modifier (owner et status sont exclus)
 const WRITABLE = ['nom', 'description', 'adresse', 'typeCuisine', 'image', 'icon', 'fraisLivraison', 'horaires', 'isOpen'];
+
+// Garde uniquement les champs autorisés qui ont une valeur
 const pick = (obj, keys) => Object.fromEntries(keys.filter((k) => obj[k] !== undefined).map((k) => [k, obj[k]]));
 
-// GET /api/restaurants?q=&cuisine=&open=true&sort=nom&page=1&limit=12
+// GET /api/restaurants?search=&typeCuisine=&open=true&sort=nom&page=1&limit=12
+// Liste publique : seulement les restaurants validés par l'admin
 export const list = async (req, res, next) => {
   try {
-    const { q, cuisine, open, sort } = req.query;
+    // On accepte les deux noms de paramètres : ceux d'Angular (search, typeCuisine) et les anciens (q, cuisine)
+    const q = req.query.search || req.query.q;
+    const cuisine = req.query.typeCuisine || req.query.cuisine;
+    const { open, sort } = req.query;
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
 
-    const filter = { status: 'approved' };
+    const filter = { status: 'valide' }; // un client ne voit que les restaurants validés
     if (q) filter.nom = { $regex: escapeRegex(String(q).trim()), $options: 'i' };
     if (cuisine && cuisine !== 'Tous') filter.typeCuisine = String(cuisine);
     if (open === 'true') filter.isOpen = true;
@@ -26,7 +35,8 @@ export const list = async (req, res, next) => {
       Restaurant.countDocuments(filter),
     ]);
 
-    res.json({ success: true, items, total, page, pages: Math.ceil(total / limit) || 1 });
+    // On renvoie la liste sous les deux noms : "restaurants" (lu par Angular) et "items" (ancien nom)
+    res.json({ success: true, restaurants: items, items, total, page, pages: Math.ceil(total / limit) || 1 });
   } catch (err) {
     next(err);
   }
@@ -35,11 +45,13 @@ export const list = async (req, res, next) => {
 // GET /api/restaurants/all  (admin : tous les restaurants quel que soit le statut)
 export const listAll = async (req, res, next) => {
   try {
-    const { q, cuisine, open, sort, status } = req.query;
+    const q = req.query.search || req.query.q;
+    const cuisine = req.query.typeCuisine || req.query.cuisine;
+    const { open, sort, status } = req.query;
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
 
-    const filter = {};
+    const filter = {}; // pas de filtre de statut par défaut : l'admin voit tout
     if (status && status !== 'Tous') filter.status = String(status);
     if (q) filter.nom = { $regex: escapeRegex(String(q).trim()), $options: 'i' };
     if (cuisine && cuisine !== 'Tous') filter.typeCuisine = String(cuisine);
@@ -51,7 +63,7 @@ export const listAll = async (req, res, next) => {
       Restaurant.countDocuments(filter),
     ]);
 
-    res.json({ success: true, items, total, page, pages: Math.ceil(total / limit) || 1 });
+    res.json({ success: true, restaurants: items, items, total, page, pages: Math.ceil(total / limit) || 1 });
   } catch (err) {
     next(err);
   }
@@ -61,7 +73,8 @@ export const listAll = async (req, res, next) => {
 export const mine = async (req, res, next) => {
   try {
     const filter = req.user.role === 'admin' ? {} : { owner: req.user._id };
-    res.json({ success: true, items: await Restaurant.find(filter).sort({ nom: 1 }) });
+    const items = await Restaurant.find(filter).sort({ nom: 1 });
+    res.json({ success: true, restaurants: items, items });
   } catch (err) {
     next(err);
   }
@@ -71,7 +84,8 @@ export const mine = async (req, res, next) => {
 export const getOne = async (req, res, next) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) throw httpError(404, 'Restaurant introuvable.');
-    const restaurant = await Restaurant.findOne({ _id: req.params.id, status: 'approved' });
+    // Seuls les restaurants validés sont visibles
+    const restaurant = await Restaurant.findOne({ _id: req.params.id, status: 'valide' });
     if (!restaurant) throw httpError(404, 'Restaurant introuvable.');
 
     const [categories, dishes] = await Promise.all([
@@ -92,8 +106,7 @@ export const create = async (req, res, next) => {
     const isAdmin = req.user.role === 'admin';
     // Un restaurateur crée pour lui-même, en attente de validation ; l'admin peut désigner le propriétaire.
     data.owner = isAdmin && req.body.owner ? req.body.owner : req.user._id;
-    data.status = isAdmin ? req.body.status || 'approved' : 'pending';
-
+    data.status = isAdmin ? req.body.status || 'valide' : 'en_attente';
     const restaurant = await Restaurant.create(data);
     res.status(201).json({ success: true, restaurant });
   } catch (err) {

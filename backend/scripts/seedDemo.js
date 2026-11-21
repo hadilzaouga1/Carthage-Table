@@ -56,7 +56,8 @@ const DEMO = [
   await Promise.all([Dish.deleteMany({ restaurant: { $in: oldIds } }), Category.deleteMany({ restaurant: { $in: oldIds } }), Restaurant.deleteMany({ _id: { $in: oldIds } })]);
 
   for (const { menu, ...data } of DEMO) {
-    const restaurant = await Restaurant.create({ ...data, owner: owner._id });
+        const restaurant = await Restaurant.create({ ...data, owner: owner._id, status: 'valide' }); 
+        // validé d'office pour la démo
     for (const [catName, dishes] of Object.entries(menu)) {
       const category = await Category.create({ nom: catName, restaurant: restaurant._id });
       await Dish.insertMany(dishes.map(([nom, description, prix, icon], i) => ({
