@@ -36,9 +36,9 @@ async function run() {
   await mongoose.connect(process.env.MONGO_URI);
 
   // On cherche le restaurateur créé par seedAdmin.js
-  const owner = await User.findOne({ email: 'resto@foodexpress.tn' });
+  const owner = await User.findOne({ email: 'resto@carthage-table.tn' });
   if (!owner) {
-    console.log("❌ Lance d'abord : npm run seed:admin");
+    console.log(" Lance d'abord : npm run seed:admin");
     return mongoose.disconnect();
   }
 
@@ -53,7 +53,7 @@ async function run() {
         await Dish.create({ nom, description, prix, categorie: category._id, restaurant: restaurant._id });
       }
     }
-    console.log(`✅ ${restaurant.nom} créé`);
+    console.log(` ${restaurant.nom} créé`);
   }
   await mongoose.disconnect();
 }
