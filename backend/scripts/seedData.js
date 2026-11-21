@@ -53,7 +53,11 @@ async function run() {
         await Dish.create({ nom, description, prix, categorie: category._id, restaurant: restaurant._id });
       }
     }
+<<<<<<< HEAD
     console.log(` ${restaurant.nom} créé`);
+=======
+    console.log(`✅ ${restaurant.nom} créé`);
+>>>>>>> 5020dc1c153867e4f1f816fe84909869b90fd0a4
   }
   await mongoose.disconnect();
 }

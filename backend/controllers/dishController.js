@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import mongoose from 'mongoose';
 import Dish from '../models/Dish.js';
 import Category from '../models/Category.js';
@@ -76,3 +77,24 @@ export const remove = async (req, res, next) => {
     next(err);
   }
 };
+=======
+import asyncHandler from '../utils/asyncHandler.js';
+import * as service from '../services/dishService.js';
+
+export const list = asyncHandler(async (req, res) => {
+  res.json({ success: true, dishes: await service.listDishes(req.query) });
+});
+
+export const create = asyncHandler(async (req, res) => {
+  res.status(201).json({ success: true, dish: await service.createDish(req.user, req.body) });
+});
+
+export const update = asyncHandler(async (req, res) => {
+  res.json({ success: true, dish: await service.updateDish(req.user, req.params.id, req.body) });
+});
+
+export const remove = asyncHandler(async (req, res) => {
+  await service.deleteDish(req.user, req.params.id);
+  res.json({ success: true, message: 'Plat supprimé' });
+});
+>>>>>>> 5020dc1c153867e4f1f816fe84909869b90fd0a4

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🍽️ Carthage Table
 
 Plateforme web de commande et de livraison de repas en Tunisie : restaurants, menus, panier, suivi de commande
@@ -35,3 +36,7 @@ un plat ne peut appartenir qu'à une catégorie du même restaurant.
 Inspiré de l'app Costra : crème `#FBF5E1`, indigo `#4A4A8C`, brun café `#8A5A2B`.
 Titres en Fraunces, texte en DM Sans, accents manuscrits en Caveat. Cartes très arrondies, boutons pilule.
 Jetons de design dans `frontend/src/styles.scss`.
+=======
+# Carthage-Table
+Plateforme web de commande et de livraison de repas en Tunisie : restaurants, menus, panier, suivi de commande et espaces client, restaurateur et administrateur. Projet MEAN Stack (Angular, Node.js, Express, MongoDB) avec authentification JWT.
+>>>>>>> 5020dc1c153867e4f1f816fe84909869b90fd0a4
