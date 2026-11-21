@@ -1,0 +1,123 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@import 'bootstrap-icons/font/bootstrap-icons.css';
+/* ===== PALETTE : vert forêt + or =====
+   Pour changer les couleurs de tout le site, on modifie seulement ces blocs. */
+
+/* Couleurs fixes (identiques dans les 2 thèmes, pour les textes sur photo) */
+:root {
+  --honey: #d4a94a;   /* or */
+  --cream: #f3ead2;   /* crème */
+  --font-display: 'Playfair Display', serif;
+}
+
+/* Mode SOMBRE (par défaut) */
+:root,
+html[data-bs-theme='dark'] {
+  --bg: #0b1a12;                       /* vert très foncé */
+  --bg-2: #10241a;
+  --surface: #12281c;                  /* cartes */
+  --border: rgba(212, 169, 74, 0.22);  /* filets dorés */
+  --text: #f3ead2;
+  --muted: #a9b5a6;
+  --gold: #d4a94a;                     /* couleur des boutons et liens */
+  --on-gold: #0b1a12;                  /* texte sur les boutons */
+}
+
+/* Mode CLAIR : crème + vert */
+html[data-bs-theme='light'] {
+  --bg: #f5f1e4;
+  --bg-2: #ebe5d1;
+  --surface: #ffffff;
+  --border: rgba(18, 40, 28, 0.15);
+  --text: #12281c;
+  --muted: #5b6b5f;
+  --gold: #1f4d36;                     /* en mode clair, le vert devient la couleur principale */
+  --on-gold: #f3ead2;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Poppins', sans-serif;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Titres épais et élégants */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* L'application prend toute la hauteur : le footer reste en bas */
+app-root { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* Carte réutilisable */
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+/* Bouton principal (suit le thème) */
+.btn-gold {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--on-gold);
+  border: 0;
+  border-radius: 999px;
+  padding: 0.8rem 1.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-gold:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--gold) 35%, transparent);
+  color: var(--on-gold);
+}
+
+/* Bouton secondaire : contour */
+.btn-ghost {
+  display: inline-block;
+  background: transparent;
+  color: var(--gold);
+  border: 1.5px solid var(--gold);
+  border-radius: 999px;
+  padding: 0.75rem 1.8rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-ghost:hover { background: var(--gold); color: var(--on-gold); }
+
+/* Boutons sur photo : toujours or et crème, quel que soit le thème */
+.btn-honey {
+  display: inline-block; background: var(--honey); color: #0b1a12; border: 0;
+  border-radius: 999px; padding: 0.85rem 2rem; font-weight: 600; text-decoration: none;
+  transition: transform 0.2s;
+}
+.btn-honey:hover { transform: translateY(-2px); color: #0b1a12; }
+.btn-cream {
+  display: inline-block; background: transparent; color: var(--cream); border: 1.5px solid var(--cream);
+  border-radius: 999px; padding: 0.8rem 1.9rem; font-weight: 600; text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-cream:hover { background: var(--cream); color: #0b1a12; }
+
+/* Champs "ligne" : seulement un trait dessous (login et register) */
+.lbl {
+  display: block; margin: 1.3rem 0 0.1rem;
+  font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+}
+.line {
+  width: 100%; background: transparent; color: var(--text);
+  border: 0; border-bottom: 1.5px solid var(--border); border-radius: 0;
+  padding: 0.6rem 0; outline: none; transition: border-color 0.2s;
+}
+.line:focus { border-bottom-color: var(--gold); }
+.line::placeholder { color: var(--muted); opacity: 0.6; }
