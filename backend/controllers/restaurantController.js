@@ -13,11 +13,14 @@ const WRITABLE = ['nom', 'description', 'adresse', 'typeCuisine', 'image', 'icon
 // Garde uniquement les champs autorisés qui ont une valeur
 const pick = (obj, keys) => Object.fromEntries(keys.filter((k) => obj[k] !== undefined).map((k) => [k, obj[k]]));
 
-// GET /api/restaurants?q=&cuisine=&open=true&sort=nom&page=1&limit=12
+// GET /api/restaurants?search=&typeCuisine=&open=true&sort=nom&page=1&limit=12
 // Liste publique : seulement les restaurants validés par l'admin
 export const list = async (req, res, next) => {
   try {
-    const { q, cuisine, open, sort } = req.query;
+    // On accepte les deux noms de paramètres : ceux d'Angular (search, typeCuisine) et les anciens (q, cuisine)
+    const q = req.query.search || req.query.q;
+    const cuisine = req.query.typeCuisine || req.query.cuisine;
+    const { open, sort } = req.query;
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
 
@@ -32,7 +35,8 @@ export const list = async (req, res, next) => {
       Restaurant.countDocuments(filter),
     ]);
 
-    res.json({ success: true, items, total, page, pages: Math.ceil(total / limit) || 1 });
+    // On renvoie la liste sous les deux noms : "restaurants" (lu par Angular) et "items" (ancien nom)
+    res.json({ success: true, restaurants: items, items, total, page, pages: Math.ceil(total / limit) || 1 });
   } catch (err) {
     next(err);
   }
@@ -41,7 +45,9 @@ export const list = async (req, res, next) => {
 // GET /api/restaurants/all  (admin : tous les restaurants quel que soit le statut)
 export const listAll = async (req, res, next) => {
   try {
-    const { q, cuisine, open, sort, status } = req.query;
+    const q = req.query.search || req.query.q;
+    const cuisine = req.query.typeCuisine || req.query.cuisine;
+    const { open, sort, status } = req.query;
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
 
@@ -57,7 +63,7 @@ export const listAll = async (req, res, next) => {
       Restaurant.countDocuments(filter),
     ]);
 
-    res.json({ success: true, items, total, page, pages: Math.ceil(total / limit) || 1 });
+    res.json({ success: true, restaurants: items, items, total, page, pages: Math.ceil(total / limit) || 1 });
   } catch (err) {
     next(err);
   }
@@ -67,7 +73,8 @@ export const listAll = async (req, res, next) => {
 export const mine = async (req, res, next) => {
   try {
     const filter = req.user.role === 'admin' ? {} : { owner: req.user._id };
-    res.json({ success: true, items: await Restaurant.find(filter).sort({ nom: 1 }) });
+    const items = await Restaurant.find(filter).sort({ nom: 1 });
+    res.json({ success: true, restaurants: items, items });
   } catch (err) {
     next(err);
   }
