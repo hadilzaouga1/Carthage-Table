@@ -1,3 +1,4 @@
+// Page d'inscription : crée un compte client puis connecte l'utilisateur.
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,37 +7,53 @@ import { AuthShell } from '../shared/auth-shell';
 
 @Component({
   selector: 'app-register',
+  standalone: true,
   imports: [FormsModule, AuthShell],
   template: `
     <app-auth-shell heading="Rejoignez-nous" sub="Créez votre compte en une minute.">
       <form (ngSubmit)="submit()">
-        @if (error()) { <div class="alert alert-danger mt-3">{{ error() }}</div> }
+        @if (error()) { <div class="form-error" role="alert">{{ error() }}</div> }
 
-        <div class="row">
-          <div class="col-6">
-            <label class="lbl">Nom</label>
-            <input class="line" name="nom" [(ngModel)]="form.nom" required>
+        <!-- Nom et prénom côte à côte (une seule colonne sur mobile) -->
+        <div class="form-grid">
+          <div class="form-field">
+            <label class="form-label" for="nom">Nom</label>
+            <input id="nom" class="field" name="nom" [(ngModel)]="form.nom" autocomplete="family-name" required />
           </div>
-          <div class="col-6">
-            <label class="lbl">Prénom</label>
-            <input class="line" name="prenom" [(ngModel)]="form.prenom" required>
+          <div class="form-field">
+            <label class="form-label" for="prenom">Prénom</label>
+            <input id="prenom" class="field" name="prenom" [(ngModel)]="form.prenom" autocomplete="given-name" required />
           </div>
         </div>
 
-        <label class="lbl">Email</label>
-        <input class="line" type="email" name="email" [(ngModel)]="form.email" placeholder="vous@exemple.com" required>
+        <div class="form-field">
+          <label class="form-label" for="email">Email</label>
+          <input id="email" class="field" type="email" name="email" [(ngModel)]="form.email"
+                 placeholder="vous@exemple.com" autocomplete="email" required />
+        </div>
 
-        <label class="lbl">Téléphone (8 chiffres)</label>
-        <input class="line" name="telephone" [(ngModel)]="form.telephone" placeholder="22123456" required>
+        <div class="form-field">
+          <label class="form-label" for="telephone">Téléphone</label>
+          <input id="telephone" class="field" name="telephone" [(ngModel)]="form.telephone"
+                 placeholder="22123456" inputmode="numeric" maxlength="8" autocomplete="tel" required />
+          <small class="form-hint">8 chiffres</small>
+        </div>
 
-        <label class="lbl">Mot de passe (8 caractères, une lettre, un chiffre)</label>
-        <input class="line" type="password" name="password" [(ngModel)]="form.password" required>
+        <div class="form-field">
+          <label class="form-label" for="password">Mot de passe</label>
+          <input id="password" class="field" type="password" name="password" [(ngModel)]="form.password"
+                 autocomplete="new-password" required />
+          <small class="form-hint">8 caractères minimum, avec une lettre et un chiffre</small>
+        </div>
 
-        <label class="lbl">Confirmation</label>
-        <input class="line" type="password" name="confirmation" [(ngModel)]="form.confirmation" required>
+        <div class="form-field">
+          <label class="form-label" for="confirmation">Confirmation du mot de passe</label>
+          <input id="confirmation" class="field" type="password" name="confirmation" [(ngModel)]="form.confirmation"
+                 autocomplete="new-password" required />
+        </div>
 
-        <button class="btn-gold w-100 mt-4" [disabled]="loading()">
-          {{ loading() ? 'Création...' : 'Créer mon compte' }}
+        <button type="submit" class="btn-gold btn-block" [disabled]="loading()">
+          {{ loading() ? 'Création…' : 'Créer mon compte' }}
         </button>
       </form>
     </app-auth-shell>
@@ -46,6 +63,7 @@ export class Register {
   private auth = inject(AuthService);
   private router = inject(Router);
 
+  // Les 6 champs exigés par le cahier des charges
   form = { nom: '', prenom: '', email: '', telephone: '', password: '', confirmation: '' };
   error = signal('');
   loading = signal(false);

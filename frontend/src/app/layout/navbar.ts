@@ -1,67 +1,55 @@
-import { Component, inject } from '@angular/core';
+// Barre de navigation (design Lovable). Liens selon le rôle, bascule sombre/clair, panier, menu mobile.
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { ThemeService } from '../core/theme.service';
+import { Icon } from '../core/icon';
 
 @Component({
   selector: 'app-navbar',
-  imports: [RouterLink, RouterLinkActive],
+  standalone: true,
+  imports: [RouterLink, RouterLinkActive, Icon],
   template: `
-    <header class="topbar">
-      <a routerLink="/" class="brand">
-        <!-- Petit blason doré -->
-        <span class="crest">CT</span>
-        <span>Carthage Table</span>
-      </a>
+    <header class="site-header">
+      <div class="container header-inner">
+        <!-- Logo vectoriel : reste net sur tous les écrans -->
+        <a routerLink="/" class="logo" aria-label="Carthage Table, accueil">
+          <svg class="logo-symbol" viewBox="0 0 40 44" fill="none" aria-hidden="true">
+            <path d="M5 19L20 6l15 13M9 18v18m22-18v18M7 36h26M4 41h32M15 21v15m10-15v15M9 18h22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <path d="M16 3h8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <span class="logo-wordmark">Carthage<span>Table.</span></span>
+        </a>
 
-      <nav class="links">
-        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Accueil</a>
-        <a routerLink="/restaurants" routerLinkActive="active">Restaurants</a>
-        @if (auth.role() === 'client') {
-          <a routerLink="/mes-commandes" routerLinkActive="active">Mes commandes</a>
-          <a routerLink="/panier" routerLinkActive="active"><i class="bi bi-bag"></i> Panier</a>
-        }
-        @if (auth.role() === 'restaurateur') {
-          <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-        }
-        @if (auth.role() === 'admin') {
-          <a routerLink="/admin" routerLinkActive="active">Administration</a>
-        }
-      </nav>
+        <nav class="nav-links" [class.mobile-open]="mobileOpen()" (click)="mobileOpen.set(false)" aria-label="Navigation principale">
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">Accueil</a>
+          <a routerLink="/restaurants" routerLinkActive="active" class="nav-link">Restaurants</a>
+          @if (auth.user()) { <a routerLink="/commandes" routerLinkActive="active" class="nav-link">Mes commandes</a> }
+          @if (auth.user()?.role === 'restaurateur') { <a routerLink="/restaurateur" routerLinkActive="active" class="nav-link">Mon restaurant</a> }
+          @if (auth.user()?.role === 'admin') { <a routerLink="/admin" routerLinkActive="active" class="nav-link">Administration</a> }
+        </nav>
 
-      <div class="actions">
-        <button class="theme" (click)="themeService.toggle()" title="Changer de thème">
-          <i [class]="themeService.theme() === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars'"></i>
-        </button>
-        @if (auth.isLoggedIn()) {
-          <span class="hello">Bonjour {{ auth.user()?.prenom }}</span>
-          <button class="btn-ghost small" (click)="auth.logout()">Déconnexion</button>
-        } @else {
-          <a routerLink="/login" class="btn-ghost small">Connexion</a>
-          <a routerLink="/register" class="btn-gold small">Inscription</a>
-        }
+        <div class="header-actions">
+          <!-- Bascule mode sombre / clair -->
+          <button type="button" class="icon-button" (click)="theme.toggle()" [attr.aria-label]="theme.theme() === 'dark' ? 'Mode clair' : 'Mode sombre'">
+            @if (theme.theme() === 'dark') { <app-icon name="sun"></app-icon> } @else { <app-icon name="moon"></app-icon> }
+          </button>
+          <a routerLink="/panier" class="icon-button cart-link" aria-label="Panier"><app-icon name="shopping-bag"></app-icon></a>
+          @if (auth.user()) {
+            <button type="button" class="btn-ghost login-button" (click)="auth.logout()"><app-icon name="user"></app-icon><span class="login-label">Déconnexion</span></button>
+          } @else {
+            <a routerLink="/login" class="btn-tomato login-button"><app-icon name="user"></app-icon><span class="login-label">Se connecter</span></a>
+          }
+          <button type="button" class="icon-button mobile-toggle" (click)="mobileOpen.set(!mobileOpen())" aria-label="Menu">
+            @if (mobileOpen()) { <app-icon name="x"></app-icon> } @else { <app-icon name="menu"></app-icon> }
+          </button>
+        </div>
       </div>
     </header>
-  `,
-  styles: `
-    .topbar {
-      position: sticky; top: 0; z-index: 50;
-      display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-      padding: 0.7rem 2rem;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-    }
-    .brand { display: flex; align-items: center; gap: 0.7rem; font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--text); text-decoration: none; }
-    .crest { display: grid; place-items: center; width: 40px; height: 40px; border: 2px solid var(--gold); color: var(--gold); font-size: 0.95rem; font-weight: 800; border-radius: 6px; }
-    .links { display: flex; gap: 1.6rem; }
-    .links a { color: var(--muted); text-decoration: none; font-size: 0.92rem; font-weight: 500; transition: color 0.2s; }
-    .links a:hover, .links a.active { color: var(--gold); }
-    .actions { display: flex; align-items: center; gap: 0.6rem; }
-    .hello { color: var(--muted); font-size: 0.9rem; }
-    .small { padding: 0.4rem 1.1rem; font-size: 0.88rem; }
-    .theme { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; cursor: pointer; border: 1.5px solid var(--border); background: transparent; color: var(--text); }  `
+  `
 })
 export class Navbar {
   auth = inject(AuthService);
-  themeService = inject(ThemeService);
+  theme = inject(ThemeService);
+  mobileOpen = signal(false); // menu mobile ouvert ou non
 }
