@@ -99,3 +99,8 @@ export async function deleteRestaurant(user, id) {
   await Category.deleteMany({ restaurant: id });
   await restaurant.deleteOne();
 }
+// ADMIN : tous les restaurants, même en attente ou suspendus (?status=en_attente)
+export function listAllRestaurants({ status }) {
+  const filter = status ? { status } : {};
+  return Restaurant.find(filter).populate('owner', 'nom prenom email').sort({ createdAt: -1 });
+}

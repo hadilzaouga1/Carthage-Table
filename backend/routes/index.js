@@ -5,7 +5,7 @@ import restaurantRoutes from './restaurantRoutes.js';
 import categoryRoutes from './categoryRoutes.js';
 import dishRoutes from './dishRoutes.js';
 import orderRoutes from './orderRoutes.js'; 
-
+import adminRoutes from './adminRoutes.js'; 
 const router = Router();
 
 router.get('/health', (req, res) => {
@@ -18,5 +18,6 @@ router.use('/restaurants', restaurantRoutes);
 router.use('/categories', categoryRoutes);
 router.use('/dishes', dishRoutes);
 router.use('/orders', orderRoutes); 
+router.use('/admin', adminRoutes);    
 
 export default router;

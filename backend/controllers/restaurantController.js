@@ -31,3 +31,7 @@ export const remove = asyncHandler(async (req, res) => {
   await service.deleteRestaurant(req.user, req.params.id);
   res.json({ success: true, message: 'Restaurant supprimé' });
 });
+// GET /api/restaurants/all (admin)
+export const listAll = asyncHandler(async (req, res) => {
+  res.json({ success: true, restaurants: await service.listAllRestaurants(req.query) });
+});
