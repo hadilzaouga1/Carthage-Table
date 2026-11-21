@@ -32,6 +32,31 @@ export const list = async (req, res, next) => {
   }
 };
 
+// GET /api/restaurants/all  (admin : tous les restaurants quel que soit le statut)
+export const listAll = async (req, res, next) => {
+  try {
+    const { q, cuisine, open, sort, status } = req.query;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
+
+    const filter = {};
+    if (status && status !== 'Tous') filter.status = String(status);
+    if (q) filter.nom = { $regex: escapeRegex(String(q).trim()), $options: 'i' };
+    if (cuisine && cuisine !== 'Tous') filter.typeCuisine = String(cuisine);
+    if (open === 'true') filter.isOpen = true;
+
+    const order = sort === 'recent' ? { createdAt: -1 } : { nom: 1 };
+    const [items, total] = await Promise.all([
+      Restaurant.find(filter).sort(order).collation({ locale: 'fr' }).skip((page - 1) * limit).limit(limit),
+      Restaurant.countDocuments(filter),
+    ]);
+
+    res.json({ success: true, items, total, page, pages: Math.ceil(total / limit) || 1 });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // GET /api/restaurants/mine  (restaurateur : ses restaurants, admin : tous)
 export const mine = async (req, res, next) => {
   try {
@@ -104,4 +129,3 @@ export const remove = async (req, res, next) => {
     next(err);
   }
 };
-
