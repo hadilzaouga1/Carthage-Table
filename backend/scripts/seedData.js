@@ -46,7 +46,7 @@ async function run() {
   await Promise.all([Restaurant.deleteMany(), Category.deleteMany(), Dish.deleteMany()]);
 
   for (const { resto, menu } of data) {
-    const restaurant = await Restaurant.create({ ...resto, owner: owner._id, status: 'valide' });
+    const restaurant = await Restaurant.create({ ...resto, owner: owner._id, status: 'approved' });
     for (const [categoryName, dishes] of Object.entries(menu)) {
       const category = await Category.create({ nom: categoryName, restaurant: restaurant._id });
       for (const [nom, description, prix] of dishes) {

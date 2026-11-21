@@ -45,7 +45,7 @@ export async function createOrder(user, body) {
 
   // --- Le restaurant doit exister, être validé et ouvert ---
   const restaurant = await Restaurant.findById(restaurantId);
-  if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Restaurant introuvable');
+  if (!restaurant || restaurant.status !== 'approved') throw new ApiError(404, 'Restaurant introuvable');
   if (!restaurant.isOpen) throw new ApiError(400, 'Ce restaurant est actuellement fermé');
 
   // --- On regroupe les quantités par plat (si le même plat est envoyé 2 fois) ---
