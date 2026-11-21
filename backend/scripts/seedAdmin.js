@@ -2,24 +2,22 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 
-// Crée un compte administrateur (à lancer une seule fois)
+// Comptes de test
+const users = [
+  { nom: 'Admin', prenom: 'Super', email: 'admin@foodexpress.tn', telephone: '20000000', password: 'Admin1234', role: 'admin' },
+  { nom: 'Ben Salah', prenom: 'Karim', email: 'resto@foodexpress.tn', telephone: '21000000', password: 'Resto1234', role: 'restaurateur' }
+];
+
 async function run() {
   await mongoose.connect(process.env.MONGO_URI);
-
-  // Si l'admin existe déjà, on ne le recrée pas
-  const exists = await User.findOne({ email: 'admin@foodexpress.tn' });
-  if (exists) {
-    console.log('ℹ️ Admin déjà existant');
-  } else {
-    await User.create({
-      nom: 'Admin',
-      prenom: 'Super',
-      email: 'admin@foodexpress.tn',
-      telephone: '20000000',
-      password: 'Admin1234',
-      role: 'admin'
-    });
-    console.log('✅ Admin créé : admin@foodexpress.tn / Admin1234');
+  for (const data of users) {
+    // On ne recrée pas un compte déjà existant
+    if (await User.findOne({ email: data.email })) {
+      console.log(`ℹ️ ${data.email} existe déjà`);
+    } else {
+      await User.create(data);
+      console.log(`✅ ${data.role} créé : ${data.email} / ${data.password}`);
+    }
   }
   await mongoose.disconnect();
 }
