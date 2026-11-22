@@ -9,6 +9,8 @@ import { Orders } from './pages/orders';
 import { Restaurateur } from './pages/restaurateur';
 import { MenuManager } from './pages/menu-manager';
 import { Admin } from './pages/admin';
+import { Profile } from './pages/profile';
+import { Favorites } from './pages/favorites';
 import { authGuard, roleGuard } from './core/guards';
 
 export const routes: Routes = [
@@ -17,6 +19,8 @@ export const routes: Routes = [
   { path: 'restaurants/:id', component: RestaurantDetail },
   { path: 'panier', component: Cart },
   { path: 'commandes', component: Orders, canActivate: [authGuard] },
+  { path: 'profil', component: Profile, canActivate: [authGuard] },
+  { path: 'favoris', component: Favorites, canActivate: [roleGuard('client')] },
   { path: 'restaurateur', component: Restaurateur, canActivate: [roleGuard('restaurateur')] },
   // Le menu est l'affaire du restaurateur : l'admin n'y a pas accès
   { path: 'restaurateur/menu', component: MenuManager, canActivate: [roleGuard('restaurateur')] },

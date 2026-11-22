@@ -3,7 +3,7 @@ import { protect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/roleMiddleware.js';
 import {
   getProfile, updateProfile, changePassword,
-  getFavorites, toggleFavorite,
+  getFavorites, getFavoriteRestaurants, toggleFavorite,
   listUsers, setUserStatus, setUserRole
 } from '../controllers/userController.js';
 
@@ -19,6 +19,7 @@ router.put('/password', changePassword);
 
 // Favoris de l'utilisateur connecté (avant "/:id" pour éviter tout conflit)
 router.get('/favorites', getFavorites);
+router.get('/favorites/restaurants', getFavoriteRestaurants);
 router.post('/favorites/:restaurantId', toggleFavorite);
 
 // Gestion des utilisateurs : réservée à l'admin

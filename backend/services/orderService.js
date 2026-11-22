@@ -17,6 +17,12 @@ const TRANSITIONS = {
 // Arrondit à 3 décimales (le dinar a des millimes)
 const round = (n) => Math.round(n * 1000) / 1000;
 
+// Codes promo connus du serveur (le serveur décide, jamais Angular)
+const PROMOS = {
+  CARTHAGE10: { type: 'percent', value: 10 },   // -10 % sur le sous-total
+  BIENVENUE: { type: 'free_delivery' }          // livraison offerte
+};
+
 // Filtre des commandes visibles par un restaurateur : celles de SES restaurants
 // (l'admin voit toutes les commandes)
 async function ordersFilterFor(user) {
@@ -27,7 +33,7 @@ async function ordersFilterFor(user) {
 
 // PASSER UNE COMMANDE
 export async function createOrder(user, body) {
-  const { restaurant: restaurantId, articles, adresseLivraison, remarque, modePaiement = 'livraison' } = body;
+  const { restaurant: restaurantId, articles, adresseLivraison, remarque, modePaiement = 'livraison', codePromo } = body;
 
   // --- Vérifications de base ---
   if (!restaurantId) throw new ApiError(400, 'Le restaurant est obligatoire');
@@ -45,7 +51,8 @@ export async function createOrder(user, body) {
 
   // --- Le restaurant doit exister, être validé et ouvert ---
   const restaurant = await Restaurant.findById(restaurantId);
-if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Restaurant introuvable');  if (!restaurant.isOpen) throw new ApiError(400, 'Ce restaurant est actuellement fermé');
+if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Restaurant introuvable');
+  if (!restaurant.isOpen) throw new ApiError(400, 'Ce restaurant est actuellement fermé');
 
   // --- On regroupe les quantités par plat (si le même plat est envoyé 2 fois) ---
   const quantities = new Map();
@@ -78,8 +85,17 @@ if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Rest
 
   // --- Règle 6 : le total est calculé par le SERVEUR ---
   const sousTotal = round(lignes.reduce((somme, l) => somme + l.quantite * l.prixUnitaire, 0));
-  const fraisLivraison = restaurant.fraisLivraison;
-  const total = round(sousTotal + fraisLivraison);
+  // --- Code promo (facultatif) : validé et calculé par le serveur ---
+  const code = typeof codePromo === 'string' ? codePromo.trim().toUpperCase() : '';
+  let remise = 0;
+  let fraisLivraison = restaurant.fraisLivraison;
+  if (code) {
+    const promo = PROMOS[code];
+    if (!promo) throw new ApiError(400, `Code promo invalide : ${code}`);
+    if (promo.type === 'percent') remise = round(Math.min(sousTotal, (sousTotal * promo.value) / 100));
+    if (promo.type === 'free_delivery') fraisLivraison = 0;
+  }
+  const total = round(Math.max(0, sousTotal - remise) + fraisLivraison);
 
   return Order.create({
     client: user._id,
@@ -87,6 +103,8 @@ if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Rest
     articles: lignes,
     adresseLivraison: adresseLivraison.trim(),
     sousTotal,
+    codePromo: code || null,
+    remise,
     fraisLivraison,
     total,
     modePaiement,
