@@ -26,9 +26,13 @@ import { Icon } from '../core/icon';
           <a routerLink="/restaurants" routerLinkActive="active" class="nav-link">Restaurants</a>
           <!-- Mes commandes : seulement pour le client -->
           @if (auth.user()?.role === 'client') { <a routerLink="/commandes" routerLinkActive="active" class="nav-link">Mes commandes</a> }
+          <!-- Favoris : seulement pour le client -->
+          @if (auth.user()?.role === 'client') { <a routerLink="/favoris" routerLinkActive="active" class="nav-link">Favoris</a> }
           <!-- Restaurateur : ses commandes reçues et la gestion de SON menu -->
           @if (auth.user()?.role === 'restaurateur') { <a routerLink="/restaurateur" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" class="nav-link">Mon restaurant</a> }
           @if (auth.user()?.role === 'restaurateur') { <a routerLink="/restaurateur/menu" routerLinkActive="active" class="nav-link">Mon menu</a> }
+          <!-- Profil : pour tout utilisateur connecté -->
+          @if (auth.user()) { <a routerLink="/profil" routerLinkActive="active" class="nav-link">Mon profil</a> }
           <!-- Admin : administration seulement (il ne gère pas les menus des restaurants) -->
           @if (auth.user()?.role === 'admin') { <a routerLink="/admin" routerLinkActive="active" class="nav-link">Administration</a> }
         </nav>

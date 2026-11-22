@@ -9,7 +9,7 @@ import adminRoutes from './adminRoutes.js';
 const router = Router();
 
 router.get('/health', (req, res) => {
-  res.json({ success: true, message: 'API FoodExpress opérationnelle 🍕' });
+  res.json({ success: true, message: 'API Carthage Table opérationnelle 🍽️' });
 });
 
 router.use('/auth', authRoutes);
