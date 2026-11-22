@@ -6,7 +6,12 @@ import { API_URL } from './config';
 
 export type OrderStatus = 'en_attente' | 'acceptee' | 'en_preparation' | 'en_livraison' | 'livree' | 'annulee';
 
-export interface OrderLine { plat: string; nom: string; quantite: number; prixUnitaire: number; }
+export interface OrderLine {
+  plat: string;
+  nom: string;
+  quantite: number;
+  prixUnitaire: number;
+}
 
 // Une commande telle que renvoyée par le backend (voir models/Order.js)
 export interface Order {
@@ -16,6 +21,8 @@ export interface Order {
   articles: OrderLine[];
   adresseLivraison: string;
   sousTotal: number;
+  codePromo?: string | null;
+  remise?: number;
   fraisLivraison: number;
   total: number;
   statut: OrderStatus;
@@ -37,8 +44,17 @@ export class OrderService {
   private http = inject(HttpClient);
 
   // POST /api/orders : on envoie seulement les ids et les quantités, JAMAIS les prix
-  create(body: { restaurant: string; articles: { plat: string; quantite: number }[]; adresseLivraison: string; remarque?: string }) {
-    return this.http.post<{ success: boolean; order: Order }>(`${API_URL}/orders`, { ...body, modePaiement: 'livraison' });
+  create(body: {
+    restaurant: string;
+    articles: { plat: string; quantite: number }[];
+    adresseLivraison: string;
+    remarque?: string;
+    codePromo?: string;
+  }) {
+    return this.http.post<{ success: boolean; order: Order }>(`${API_URL}/orders`, {
+      ...body,
+      modePaiement: 'livraison'
+    });
   }
 
   // GET /api/orders/my-orders (client)

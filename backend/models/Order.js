@@ -19,6 +19,8 @@ const orderSchema = new mongoose.Schema(
     articles: { type: [orderItemSchema], required: true },
     adresseLivraison: { type: String, required: [true, "L'adresse de livraison est obligatoire"], trim: true },
     sousTotal: { type: Number, required: true },
+    codePromo: { type: String, default: null, trim: true, uppercase: true },
+    remise: { type: Number, required: true, min: 0, default: 0 },
     fraisLivraison: { type: Number, required: true },
     total: { type: Number, required: true },
     modePaiement: { type: String, enum: ['livraison', 'en_ligne'], default: 'livraison' },
