@@ -45,6 +45,11 @@ const LABELS: Record<string, string> = {
           <ul>
             @for (a of o.articles; track a.plat) { <li>{{ a.quantite }} × {{ a.nom }} — {{ (a.quantite * a.prixUnitaire).toFixed(2) }} DT</li> }
           </ul>
+          @if ((o.remise ?? 0) > 0) {
+            <p class="discount">
+              Remise{{ o.codePromo ? ' (' + o.codePromo + ')' : '' }} : -{{ (o.remise ?? 0).toFixed(2) }} DT
+            </p>
+          }
           <p>Livraison : {{ o.fraisLivraison.toFixed(2) }} DT · <strong>Total : {{ o.total.toFixed(2) }} DT</strong></p>
           <small>Adresse : {{ o.adresseLivraison }}</small>
 
@@ -61,6 +66,7 @@ const LABELS: Record<string, string> = {
     .steps { display: flex; flex-wrap: wrap; gap: 8px; }
     .step { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(128,128,128,.4); opacity: .5; font-size: .85rem; }
     .step.done { opacity: 1; background: #e8590c; border-color: #e8590c; color: #fff; font-weight: 700; }
+    .discount { color: #2f9e44; font-weight: 700; margin: 0; }
     .cancelled { color: #e5484d; font-weight: 700; }
     ul { margin: 0; padding-left: 18px; }
   `]

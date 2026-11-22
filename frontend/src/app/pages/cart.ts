@@ -35,9 +35,35 @@ import { AuthService } from '../core/auth.service';
           }
         </div>
 
+        <div class="promo-box">
+          <label for="promo-input">Code promo (ex. CARTHAGE10, BIENVENUE)</label>
+          <div class="promo-row">
+            <input
+              id="promo-input"
+              type="text"
+              placeholder="Entrer un code promo"
+              [value]="promoDraft()"
+              (input)="promoDraft.set($any($event.target).value)"
+            />
+            <button type="button" class="btn-ghost" (click)="applyCode()">Appliquer</button>
+            @if (cart.promoCode()) {
+              <button type="button" class="btn-ghost" (click)="removeCode()">Retirer</button>
+            }
+          </div>
+          @if (cart.activePromo(); as promo) {
+            <p class="promo-ok">Code <strong>{{ promo.code }}</strong> actif : {{ promo.label }}.</p>
+          }
+          @if (cart.promoError()) {
+            <p class="error">{{ cart.promoError() }}</p>
+          }
+        </div>
+
         <div class="summary">
           <p>Sous-total : {{ cart.sousTotal().toFixed(2) }} DT</p>
-          <p>Livraison : {{ cart.fraisLivraison().toFixed(2) }} DT</p>
+          @if (cart.remise() > 0) {
+            <p class="discount">Remise ({{ cart.promoCode() }}) : -{{ cart.remise().toFixed(2) }} DT</p>
+          }
+          <p>Livraison : {{ cart.fraisEffectifs().toFixed(2) }} DT</p>
           <p class="total">Total : {{ cart.total().toFixed(2) }} DT</p>
           <small>Le total final est confirmé par le serveur. Paiement à la livraison.</small>
         </div>
@@ -63,12 +89,17 @@ import { AuthService } from '../core/auth.service';
     .name { flex: 1; font-weight: 600; }
     .qty { display: flex; align-items: center; gap: 10px; }
     .amount { min-width: 90px; text-align: right; font-weight: 700; }
+    .promo-box { display: grid; gap: 8px; max-width: 520px; margin: 16px 0; }
+    .promo-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .promo-row input { flex: 1; min-width: 180px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; text-transform: uppercase; }
+    .promo-ok { color: #2f9e44; font-weight: 600; margin: 0; }
+    .discount { color: #2f9e44; font-weight: 700; }
     .summary { margin: 20px 0; }
     .summary p { margin: 4px 0; }
     .total { font-size: 1.3rem; font-weight: 800; }
     .form { display: grid; gap: 8px; max-width: 520px; margin-bottom: 16px; }
     .form input { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
-    .error { color: #e5484d; font-weight: 600; }
+    .error { color: #e5484d; font-weight: 600; margin: 0; }
   `]
 })
 export class Cart {
@@ -77,10 +108,20 @@ export class Cart {
   private orders = inject(OrderService);
   private router = inject(Router);
 
+  promoDraft = signal(this.cart.promoCode() || '');
   adresse = signal('');
   remarque = signal('');
   sending = signal(false);
   error = signal('');
+
+  applyCode() {
+    this.cart.applyPromo(this.promoDraft());
+  }
+
+  removeCode() {
+    this.promoDraft.set('');
+    this.cart.clearPromo();
+  }
 
   order() {
     // Il faut être connecté pour commander
@@ -89,13 +130,18 @@ export class Cart {
 
     this.error.set('');
     this.sending.set(true);
-    this.orders.create({
+    const payload: any = {
       restaurant: this.cart.restaurantId()!,
       // On envoie seulement le plat et la quantité : le serveur relit les prix dans la base
       articles: this.cart.lines().map((l) => ({ plat: l.plat, quantite: l.quantite })),
       adresseLivraison: this.adresse().trim(),
       remarque: this.remarque().trim()
-    }).subscribe({
+    };
+    if (this.cart.promoCode()) {
+      payload.codePromo = this.cart.promoCode()!;
+    }
+
+    this.orders.create(payload).subscribe({
       next: () => { this.cart.clear(); this.router.navigate(['/commandes']); },
       error: (err) => { this.sending.set(false); this.error.set(err.error?.message || 'Impossible de passer la commande.'); }
     });
