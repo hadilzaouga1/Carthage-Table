@@ -6,6 +6,8 @@ import User from '../models/User.js';
 import Restaurant from '../models/Restaurant.js';
 import Category from '../models/Category.js';
 import Dish from '../models/Dish.js';
+import Cuisine from '../models/Cuisine.js';
+import { CUISINES } from './data/cuisines.js';
 
 const DEMO = [
   { nom: 'Pizza House', typeCuisine: 'Pizza', icon: '🍕', adresse: 'Centre-ville, Tunis', fraisLivraison: 5, horaires: '10:00 - 23:00', isOpen: true,
@@ -44,6 +46,11 @@ const DEMO = [
 
 (async () => {
   await mongoose.connect(process.env.MONGO_URI);
+
+  // Les types de cuisine utilisés par les restaurants de démo
+  for (const c of CUISINES) {
+    if (!(await Cuisine.exists({ nom: c.nom }))) await Cuisine.create(c);
+  }
 
   let owner = await User.findOne({ email: 'resto@carthage-table.tn' });
   if (!owner) {

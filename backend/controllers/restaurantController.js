@@ -3,6 +3,7 @@ import Restaurant from '../models/Restaurant.js';
 import Category from '../models/Category.js';
 import Dish from '../models/Dish.js';
 import { loadManagedRestaurant, httpError } from '../utils/ownership.js';
+import { assertKnownCuisine } from '../services/cuisineService.js';
 
 // Protège la recherche : les caractères spéciaux sont neutralisés avant d'être utilisés dans une regex
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -103,6 +104,7 @@ export const getOne = async (req, res, next) => {
 export const create = async (req, res, next) => {
   try {
     const data = pick(req.body, WRITABLE);
+    await assertKnownCuisine(data.typeCuisine); // le type de cuisine doit exister (géré par l'admin)
     const isAdmin = req.user.role === 'admin';
     // Un restaurateur crée pour lui-même, en attente de validation ; l'admin peut désigner le propriétaire.
     data.owner = isAdmin && req.body.owner ? req.body.owner : req.user._id;
@@ -118,7 +120,9 @@ export const create = async (req, res, next) => {
 export const update = async (req, res, next) => {
   try {
     const restaurant = await loadManagedRestaurant(req.params.id, req.user);
-    Object.assign(restaurant, pick(req.body, WRITABLE));
+    const changes = pick(req.body, WRITABLE);
+    await assertKnownCuisine(changes.typeCuisine);
+    Object.assign(restaurant, changes);
     // Seul l'admin valide ou suspend un restaurant partenaire
     if (req.user.role === 'admin' && req.body.status) restaurant.status = req.body.status;
     await restaurant.save();

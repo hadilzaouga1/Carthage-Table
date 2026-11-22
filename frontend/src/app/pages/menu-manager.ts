@@ -1,5 +1,6 @@
 // Page « Mon menu » (restaurateur) : créer son restaurant, gérer ses catégories et ses plats.
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { CuisineService } from '../core/cuisine.service';
 import { MenuService, MyRestaurant, Cat, MenuDish } from '../core/menu.service';
 
 @Component({
@@ -16,7 +17,10 @@ import { MenuService, MyRestaurant, Cat, MenuDish } from '../core/menu.service';
         <div class="form">
           <input placeholder="Nom du restaurant *" [value]="rNom()" (input)="rNom.set($any($event.target).value)" />
           <input placeholder="Adresse *" [value]="rAdresse()" (input)="rAdresse.set($any($event.target).value)" />
-          <input placeholder="Type de cuisine * (ex : Tunisien, Pizza)" [value]="rCuisine()" (input)="rCuisine.set($any($event.target).value)" />
+          <select (change)="rCuisine.set($any($event.target).value)">
+            <option value="">Type de cuisine *</option>
+            @for (c of cuisineService.cuisines(); track c._id) { <option [value]="c.nom" [selected]="c.nom === rCuisine()">{{ c.icon }} {{ c.nom }}</option> }
+          </select>
           <input placeholder="Frais de livraison en DT (ex : 5, vide = gratuit)" [value]="rFrais()" (input)="rFrais.set($any($event.target).value)" />
           <button type="button" class="btn-tomato" (click)="createRestaurant()">Créer mon restaurant</button>
         </div>
@@ -94,6 +98,7 @@ import { MenuService, MyRestaurant, Cat, MenuDish } from '../core/menu.service';
 })
 export class MenuManager implements OnInit {
   private api = inject(MenuService);
+  cuisineService = inject(CuisineService);
 
   restaurants = signal<MyRestaurant[]>([]);
   currentId = signal('');
@@ -111,7 +116,10 @@ export class MenuManager implements OnInit {
   // Affiche le message d'erreur renvoyé par le serveur
   private fail = (err: any) => this.error.set(err.error?.message || 'Une erreur est survenue.');
 
-  ngOnInit() { this.loadRestaurants(); }
+  ngOnInit() {
+    this.cuisineService.load().subscribe({ error: () => {} });
+    this.loadRestaurants();
+  }
 
   current() { return this.restaurants().find((r) => r._id === this.currentId()); }
   catName2(id: string) { return this.categories().find((c) => c._id === id)?.nom ?? ''; }

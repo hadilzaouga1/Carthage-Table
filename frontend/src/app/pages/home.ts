@@ -2,6 +2,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { RestaurantService, Restaurant } from '../core/restaurant.service';
+import { CuisineService } from '../core/cuisine.service';
 import { RestaurantCard } from '../shared/restaurant-card';
 import { Icon } from '../core/icon';
 
@@ -57,9 +58,12 @@ import { Icon } from '../core/icon';
         <a routerLink="/restaurants" class="text-link">Tous les restaurants <app-icon name="arrow-right"></app-icon></a>
       </div>
       <div class="cuisine-row">
-        @for (c of cuisines; track c.name) {
-          <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === c.name" (click)="choose(c.name)">
-            <app-icon [name]="c.icon"></app-icon>{{ c.label }}
+        <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === 'Tous'" (click)="choose('Tous')">
+          <app-icon name="utensils"></app-icon>Tous
+        </button>
+        @for (c of cuisineService.cuisines(); track c._id) {
+          <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === c.nom" (click)="choose(c.nom)">
+            <span aria-hidden="true">{{ c.icon || '🍽️' }}</span> {{ c.nom }}
           </button>
         }
       </div>
@@ -90,24 +94,22 @@ import { Icon } from '../core/icon';
 })
 export class Home implements OnInit {
   private service = inject(RestaurantService);
+  cuisineService = inject(CuisineService);
 
   restaurants = signal<Restaurant[]>([]); // restaurants affichés
   cuisine = signal('Tous');               // cuisine sélectionnée
 
-  // Les noms (name) doivent correspondre aux valeurs de typeCuisine dans ta base
-    // Les noms (name) correspondent EXACTEMENT aux valeurs de typeCuisine dans la base de données
-  cuisines = [
-    { name: 'Tous', label: 'Tous', icon: 'utensils' }, { name: 'Pizza', label: 'Pizzas', icon: 'pizza' },
-    { name: 'Fast-food', label: 'Burgers', icon: 'sandwich' }, { name: 'Tunisien', label: 'Tunisien', icon: 'utensils' },
-    { name: 'Italien', label: 'Pâtes', icon: 'utensils' }, { name: 'Desserts', label: 'Desserts', icon: 'cake-slice' }
-  ];
+  // Les types de cuisine viennent de l'API (gérés par l'admin)
   slogans = ['Bon appétit, بالشفاء !', 'Du frais. Du bon. Du local.', 'Votre prochaine envie est ici.', 'La Tunisie à votre table.'];
   steps = [
     { icon: 'search', title: 'Trouvez votre bonheur', text: 'Une envie de pizza, de burger ou de saveurs du pays ? Choisissez votre restaurant.' },
     { icon: 'shopping-bag', title: 'Composez votre festin', text: 'Vos plats préférés, quelques clics et une adresse. On s’occupe de la suite.' },
     { icon: 'bike', title: 'Savourez, tout simplement', text: 'Votre repas arrive à votre porte. Payez à la livraison et régalez-vous.' }
   ];
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.cuisineService.load().subscribe({ error: () => {} }); // en cas d'erreur, la liste de secours reste affichée
+    this.load();
+  }
 
   // Choisir une cuisine puis recharger la liste
   choose(name: string) { this.cuisine.set(name); this.load(); }

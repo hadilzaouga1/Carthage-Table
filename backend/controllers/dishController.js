@@ -15,7 +15,8 @@ async function assertCategoryMatches(categoryId, restaurantId) {
   }
 }
 
-// GET /api/dishes?restaurant=&categorie=&q=
+// GET /api/dishes?restaurant=&categorie=&q=&page=1&limit=20
+// Sans "page", on renvoie jusqu'à 200 plats (comportement historique) ; avec "page", la liste est paginée.
 export const list = async (req, res, next) => {
   try {
     const { restaurant, categorie, q } = req.query;
@@ -27,7 +28,15 @@ export const list = async (req, res, next) => {
     if (categorie) filter.categorie = categorie;
     if (q) filter.nom = { $regex: escapeRegex(String(q).trim()), $options: 'i' };
 
-    res.json({ success: true, items: await Dish.find(filter).sort({ nom: 1 }).limit(200) });
+    const paginated = req.query.page !== undefined;
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = paginated ? Math.min(Math.max(parseInt(req.query.limit, 10) || 20, 1), 100) : 200;
+
+    const [items, total] = await Promise.all([
+      Dish.find(filter).sort({ nom: 1 }).skip((page - 1) * limit).limit(limit),
+      Dish.countDocuments(filter)
+    ]);
+    res.json({ success: true, items, total, page, pages: Math.ceil(total / limit) || 1 });
   } catch (err) {
     next(err);
   }

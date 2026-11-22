@@ -3,25 +3,8 @@ import Dish from '../models/Dish.js';
 import Restaurant from '../models/Restaurant.js';
 import ApiError from '../utils/ApiError.js';
 import assertCanManage from '../utils/assertCanManage.js';
-
-// Le cycle de vie (règle 8) : à partir d'un statut, quels statuts sont possibles ?
-const TRANSITIONS = {
-  en_attente: ['acceptee', 'annulee'],
-  acceptee: ['en_preparation', 'annulee'],
-  en_preparation: ['en_livraison', 'annulee'],
-  en_livraison: ['livree'],
-  livree: [],   // état final
-  annulee: []   // état final
-};
-
-// Arrondit à 3 décimales (le dinar a des millimes)
-const round = (n) => Math.round(n * 1000) / 1000;
-
-// Codes promo connus du serveur (le serveur décide, jamais Angular)
-const PROMOS = {
-  CARTHAGE10: { type: 'percent', value: 10 },   // -10 % sur le sous-total
-  BIENVENUE: { type: 'free_delivery' }          // livraison offerte
-};
+import { computeTotals } from '../utils/pricing.js';
+import { TRANSITIONS, canTransition } from '../utils/orderStatus.js';
 
 // Filtre des commandes visibles par un restaurateur : celles de SES restaurants
 // (l'admin voit toutes les commandes)
@@ -51,7 +34,7 @@ export async function createOrder(user, body) {
 
   // --- Le restaurant doit exister, être validé et ouvert ---
   const restaurant = await Restaurant.findById(restaurantId);
-if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Restaurant introuvable');
+  if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Restaurant introuvable');
   if (!restaurant.isOpen) throw new ApiError(400, 'Ce restaurant est actuellement fermé');
 
   // --- On regroupe les quantités par plat (si le même plat est envoyé 2 fois) ---
@@ -83,19 +66,8 @@ if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Rest
     prixUnitaire: d.prix
   }));
 
-  // --- Règle 6 : le total est calculé par le SERVEUR ---
-  const sousTotal = round(lignes.reduce((somme, l) => somme + l.quantite * l.prixUnitaire, 0));
-  // --- Code promo (facultatif) : validé et calculé par le serveur ---
-  const code = typeof codePromo === 'string' ? codePromo.trim().toUpperCase() : '';
-  let remise = 0;
-  let fraisLivraison = restaurant.fraisLivraison;
-  if (code) {
-    const promo = PROMOS[code];
-    if (!promo) throw new ApiError(400, `Code promo invalide : ${code}`);
-    if (promo.type === 'percent') remise = round(Math.min(sousTotal, (sousTotal * promo.value) / 100));
-    if (promo.type === 'free_delivery') fraisLivraison = 0;
-  }
-  const total = round(Math.max(0, sousTotal - remise) + fraisLivraison);
+  // --- Règle 6 : le total (et le code promo) sont calculés par le SERVEUR ---
+  const { sousTotal, codePromo: code, remise, fraisLivraison, total } = computeTotals(lignes, restaurant.fraisLivraison, codePromo);
 
   return Order.create({
     client: user._id,
@@ -168,7 +140,7 @@ export async function updateStatus(user, id, statut) {
   if (order.statut === 'livree') throw new ApiError(400, 'Une commande livrée ne peut plus être modifiée');
 
   // Règle 8 : on respecte le cycle de vie
-  if (!TRANSITIONS[order.statut].includes(statut)) {
+  if (!canTransition(order.statut, statut)) {
     throw new ApiError(400, `Passage impossible : ${order.statut} → ${statut}`);
   }
 

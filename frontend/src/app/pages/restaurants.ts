@@ -1,5 +1,6 @@
 // Page « Tous les restaurants » : recherche, filtre par cuisine, ouverts seulement, pagination.
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { CuisineService } from '../core/cuisine.service';
 import { RestaurantService, Restaurant } from '../core/restaurant.service';
 import { RestaurantCard } from '../shared/restaurant-card';
 import { Icon } from '../core/icon';
@@ -25,8 +26,9 @@ import { Icon } from '../core/icon';
 
       <!-- Filtre par type de cuisine + bouton "ouverts seulement" -->
       <div class="cuisine-row">
-        @for (c of cuisines; track c) {
-          <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === c" (click)="chooseCuisine(c)">{{ c }}</button>
+        <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === 'Tous'" (click)="chooseCuisine('Tous')">Tous</button>
+        @for (c of cuisineService.cuisines(); track c._id) {
+          <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === c.nom" (click)="chooseCuisine(c.nom)">{{ c.icon }} {{ c.nom }}</button>
         }
         <button type="button" class="btn-ghost cuisine-button" [class.selected]="onlyOpen()" (click)="toggleOpen()">Ouverts seulement</button>
       </div>
@@ -58,6 +60,7 @@ import { Icon } from '../core/icon';
 })
 export class Restaurants implements OnInit {
   private service = inject(RestaurantService);
+  cuisineService = inject(CuisineService);
 
   restaurants = signal<Restaurant[]>([]); // restaurants affichés
   total = signal(0);                      // nombre total trouvé
@@ -68,10 +71,10 @@ export class Restaurants implements OnInit {
   private search = '';                    // texte de recherche
   private timer: any;                     // petit délai pour ne pas appeler l'API à chaque lettre
 
-  // Ces noms correspondent EXACTEMENT aux valeurs de typeCuisine dans la base
-  cuisines = ['Tous', 'Pizza', 'Italien', 'Tunisien', 'Fast-food', 'Desserts', 'Boissons'];
-
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.cuisineService.load().subscribe({ error: () => {} }); // liste de secours si l'API ne répond pas
+    this.load();
+  }
 
   onSearch(text: string) {
     clearTimeout(this.timer);
