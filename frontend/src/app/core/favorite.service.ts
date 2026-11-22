@@ -1,7 +1,9 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { map } from 'rxjs';
 import { API_URL } from './config';
 import { AuthService } from './auth.service';
+import { Restaurant } from './restaurant.service';
 
 const FAV_KEY = 'ct_favorites';
 
@@ -60,6 +62,13 @@ export class FavoriteService {
         this.syncFromServer();
       }
     });
+  }
+
+  // GET /api/users/favorites/restaurants : les restaurants favoris avec toutes leurs infos
+  restaurants() {
+    return this.http
+      .get<{ success: boolean; restaurants: Restaurant[] }>(`${API_URL}/users/favorites/restaurants`)
+      .pipe(map((r) => r.restaurants));
   }
 
   syncFromServer() {

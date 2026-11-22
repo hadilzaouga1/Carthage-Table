@@ -24,6 +24,12 @@ export const getFavorites = asyncHandler(async (req, res) => {
   res.json({ success: true, favorites });
 });
 
+// GET /api/users/favorites/restaurants : les restaurants favoris (avec leurs infos)
+export const getFavoriteRestaurants = asyncHandler(async (req, res) => {
+  const restaurants = await userService.getFavoriteRestaurants(req.user._id);
+  res.json({ success: true, restaurants });
+});
+
 // POST /api/users/favorites/:restaurantId : ajouter/retirer un restaurant des favoris
 export const toggleFavorite = asyncHandler(async (req, res) => {
   const result = await userService.toggleFavorite(req.user._id, req.params.restaurantId);

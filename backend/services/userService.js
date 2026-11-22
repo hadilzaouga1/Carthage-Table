@@ -38,6 +38,13 @@ export async function getFavorites(userId) {
   return (user.favorites || []).map((id) => String(id));
 }
 
+// Récupérer les restaurants favoris complets (seulement ceux qui sont validés)
+export async function getFavoriteRestaurants(userId) {
+  const user = await User.findById(userId).select('favorites');
+  if (!user) throw new ApiError(404, 'Utilisateur introuvable');
+  return Restaurant.find({ _id: { $in: user.favorites || [] }, status: 'valide' }).sort({ nom: 1 });
+}
+
 // Ajouter ou retirer un restaurant des favoris
 export async function toggleFavorite(userId, restaurantId) {
   if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
