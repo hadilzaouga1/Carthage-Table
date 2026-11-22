@@ -22,7 +22,9 @@ const userSchema = new mongoose.Schema(
     // Les 3 rôles du cahier des charges. Par défaut : client
     role: { type: String, enum: ['client', 'restaurateur', 'admin'], default: 'client' },
     // Un compte désactivé ne peut plus se connecter (règle 10)
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    // Restaurants favoris de l'utilisateur
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Restaurant' }]
   },
   { timestamps: true } // ajoute automatiquement createdAt et updatedAt
 );

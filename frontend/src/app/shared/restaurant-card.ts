@@ -1,8 +1,10 @@
 // Carte d'un restaurant (design Lovable). Utilisée sur l'accueil et la page Restaurants.
-import { Component, computed, input, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { Icon } from '../core/icon';
 import { Restaurant } from '../core/restaurant.service';
+import { FavoriteService } from '../core/favorite.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-restaurant-card',
@@ -16,7 +18,13 @@ import { Restaurant } from '../core/restaurant.service';
           <img [src]="src()" [alt]="'Cuisine de ' + r().nom" loading="lazy" (error)="onError()" />
         </a>
         <span class="restaurant-badge" [class.closed]="!r().isOpen"><span class="dot"></span>{{ r().isOpen ? 'Ouvert' : 'Fermé' }}</span>
-        <button type="button" class="favorite icon-button" [class.is-favorite]="favorite()" (click)="favorite.set(!favorite())" aria-label="Favori">
+        <button
+          type="button"
+          class="favorite icon-button"
+          [class.is-favorite]="fav.isFavorite(r()._id)"
+          (click)="toggleFavorite($event)"
+          aria-label="Favori"
+        >
           <app-icon name="heart"></app-icon>
         </button>
       </div>
@@ -35,8 +43,11 @@ import { Restaurant } from '../core/restaurant.service';
   `
 })
 export class RestaurantCard {
+  fav = inject(FavoriteService);
+  private auth = inject(AuthService);
+  private router = inject(Router);
+
   r = input.required<Restaurant>();  // le restaurant à afficher (donné par le parent)
-  favorite = signal(false);          // état du coeur
   failed = signal(false);            // true si la photo du restaurant est introuvable
 
   // Adresse de la photo : photo par défaut si absente ou introuvable,
@@ -46,6 +57,16 @@ export class RestaurantCard {
     if (this.failed() || !image) return 'img/pizzeria.jpg';
     return /^(https?:)?\/\//.test(image) ? image : `img/${image}`;
   });
+
+  toggleFavorite(event: Event) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!this.auth.isLoggedIn()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    this.fav.toggle(this.r()._id);
+  }
 
   onError() { this.failed.set(true); }
 }
