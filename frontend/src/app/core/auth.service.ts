@@ -41,6 +41,15 @@ export class AuthService {
     this.user.set(res.user);
   }
 
+  // Met à jour l'utilisateur connecté (après modification du profil), sans toucher au token
+  updateUser(changes: Partial<User>) {
+    const current = this.user();
+    if (!current) return;
+    const next = { ...current, ...changes };
+    localStorage.setItem(USER_KEY, JSON.stringify(next));
+    this.user.set(next);
+  }
+
   // POST /api/auth/register
   register(data: Record<string, string>) {
     return this.http.post<AuthResponse>(`${API_URL}/auth/register`, data).pipe(tap((res) => this.save(res)));
