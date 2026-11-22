@@ -17,6 +17,19 @@ export const changePassword = asyncHandler(async (req, res) => {
   await userService.changePassword(req.user._id, req.body);
   res.json({ success: true, message: 'Mot de passe modifié' });
 });
+
+// GET /api/users/favorites : liste des favoris de l'utilisateur connecté
+export const getFavorites = asyncHandler(async (req, res) => {
+  const favorites = await userService.getFavorites(req.user._id);
+  res.json({ success: true, favorites });
+});
+
+// POST /api/users/favorites/:restaurantId : ajouter/retirer un restaurant des favoris
+export const toggleFavorite = asyncHandler(async (req, res) => {
+  const result = await userService.toggleFavorite(req.user._id, req.params.restaurantId);
+  res.json({ success: true, ...result });
+});
+
 // GET /api/users (admin)
 export const listUsers = asyncHandler(async (req, res) => {
   res.json({ success: true, ...(await userService.listUsers(req.query)) });

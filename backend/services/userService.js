@@ -1,4 +1,6 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
+import Restaurant from '../models/Restaurant.js';
 import ApiError from '../utils/ApiError.js';
 
 // Modifier nom, prénom et téléphone (section 3.3 du cahier)
@@ -28,6 +30,39 @@ export async function changePassword(userId, { oldPassword, newPassword }) {
   user.password = newPassword; // sera haché automatiquement par pre('save')
   await user.save();
 }
+
+// Récupérer les favoris d'un utilisateur
+export async function getFavorites(userId) {
+  const user = await User.findById(userId).select('favorites');
+  if (!user) throw new ApiError(404, 'Utilisateur introuvable');
+  return (user.favorites || []).map((id) => String(id));
+}
+
+// Ajouter ou retirer un restaurant des favoris
+export async function toggleFavorite(userId, restaurantId) {
+  if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+    throw new ApiError(400, 'Identifiant de restaurant invalide');
+  }
+  const restaurant = await Restaurant.findById(restaurantId).select('_id');
+  if (!restaurant) throw new ApiError(404, 'Restaurant introuvable');
+
+  const user = await User.findById(userId).select('favorites');
+  if (!user) throw new ApiError(404, 'Utilisateur introuvable');
+
+  const current = (user.favorites || []).map((id) => String(id));
+  const exists = current.includes(String(restaurantId));
+
+  if (exists) {
+    user.favorites = user.favorites.filter((id) => String(id) !== String(restaurantId));
+  } else {
+    user.favorites.push(restaurant._id);
+  }
+
+  await user.save();
+  const favorites = user.favorites.map((id) => String(id));
+  return { isFavorite: !exists, favorites };
+}
+
 // Protège les caractères spéciaux d'une recherche
 const escapeRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
