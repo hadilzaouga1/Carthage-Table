@@ -58,8 +58,7 @@ export class RestaurantCard {
   displayRating = computed(() => {
     const count = this.r().nombreAvis ?? 0;
     const avg = this.r().noteMoyenne ?? 0;
-    if (count > 0) return avg.toFixed(1);
-    return '4.8';
+    return count > 0 ? avg.toFixed(1) : 'Nouveau';
   });
 
   // Adresse de la photo : photo par défaut si absente ou introuvable,

@@ -7,6 +7,14 @@ import { CartService } from '../core/cart.service';
 import { AuthService } from '../core/auth.service';
 import { ReviewService, Review } from '../core/review.service';
 
+const STAR_LABELS: Record<number, string> = {
+  1: '1 ★ — Décevant',
+  2: '2 ★ — Moyen',
+  3: '3 ★ — Correct',
+  4: '4 ★ — Très bon',
+  5: '5 ★ — Excellent'
+};
+
 @Component({
   selector: 'app-restaurant-detail',
   standalone: true,
@@ -27,7 +35,7 @@ import { ReviewService, Review } from '../core/review.service';
           <p>{{ restaurant()!.description }}</p>
           <p>
             <strong>{{ restaurant()!.isOpen ? 'Ouvert' : 'Fermé' }}</strong> · {{ restaurant()!.horaires }} · Livraison {{ restaurant()!.fraisLivraison.toFixed(2) }} DT
-            · ★ <strong>{{ (restaurant()!.nombreAvis ?? 0) > 0 ? (restaurant()!.noteMoyenne ?? 0).toFixed(1) : '4.8' }}</strong>
+            · ★ <strong>{{ (restaurant()!.nombreAvis ?? 0) > 0 ? (restaurant()!.noteMoyenne ?? 0).toFixed(1) + ' / 5' : 'Nouveau' }}</strong>
             ({{ restaurant()!.nombreAvis ?? 0 }} avis)
           </p>
         </div>
@@ -59,14 +67,19 @@ import { ReviewService, Review } from '../core/review.service';
           <h3>Avis clients ({{ reviews().length }})</h3>
 
           <div class="review-form">
-            <label for="review-note">Votre note</label>
-            <select id="review-note" [value]="note()" (change)="note.set(+$any($event.target).value)">
-              <option [value]="5">5 ★ — Excellent</option>
-              <option [value]="4">4 ★ — Très bon</option>
-              <option [value]="3">3 ★ — Correct</option>
-              <option [value]="2">2 ★ — Moyen</option>
-              <option [value]="1">1 ★ — Décevant</option>
-            </select>
+            <label>Votre note : <strong>{{ starLabel(note()) }}</strong></label>
+            <div class="star-picker" role="radiogroup" aria-label="Choisir une note">
+              @for (s of [1, 2, 3, 4, 5]; track s) {
+                <button
+                  type="button"
+                  class="star-btn"
+                  [class.active]="note() >= s"
+                  (click)="note.set(s)"
+                >
+                  ★ {{ s }}
+                </button>
+              }
+            </div>
 
             <label for="review-comment">Votre commentaire (facultatif)</label>
             <textarea
@@ -80,9 +93,14 @@ import { ReviewService, Review } from '../core/review.service';
             @if (reviewError()) { <p class="error">{{ reviewError() }}</p> }
             @if (reviewSuccess()) { <p class="success">{{ reviewSuccess() }}</p> }
 
-            <button type="button" class="btn-tomato" [disabled]="submittingReview()" (click)="submitReview()">
-              {{ auth.isLoggedIn() ? (submittingReview() ? 'Publication...' : 'Publier mon avis') : 'Se connecter pour noter' }}
-            </button>
+            <div class="review-actions">
+              <button type="button" class="btn-tomato" [disabled]="submittingReview()" (click)="submitReview()">
+                {{ auth.isLoggedIn() ? (submittingReview() ? 'Publication...' : (myReviewId() ? 'Mettre à jour mon avis' : 'Publier mon avis')) : 'Se connecter pour noter' }}
+              </button>
+              @if (myReviewId()) {
+                <button type="button" class="btn-ghost" (click)="deleteMyReview()">Supprimer mon avis</button>
+              }
+            </div>
           </div>
 
           @if (!reviews().length) {
@@ -90,9 +108,13 @@ import { ReviewService, Review } from '../core/review.service';
           } @else {
             <div class="review-list">
               @for (rev of reviews(); track rev._id) {
-                <article class="review-card">
+                <article class="review-card" [class.mine]="rev._id === myReviewId()">
                   <div class="review-head">
-                    <strong>{{ authorLabel(rev) }} · {{ '★'.repeat(rev.note) }} ({{ rev.note }}/5)</strong>
+                    <strong>
+                      {{ authorLabel(rev) }}
+                      @if (rev._id === myReviewId()) { <span class="badge-you">Vous</span> }
+                      · <span class="stars-gold">{{ '★'.repeat(rev.note) }}{{ '☆'.repeat(5 - rev.note) }}</span> ({{ rev.note }}/5)
+                    </strong>
                     <span>{{ rev.createdAt | date: 'dd/MM/yyyy' }}</span>
                   </div>
                   @if (rev.commentaire) {
@@ -125,10 +147,17 @@ import { ReviewService, Review } from '../core/review.service';
     .unavailable { opacity: .6; font-size: .9rem; }
     .reviews-section { margin-top: 40px; padding-top: 24px; border-top: 1px solid rgba(128,128,128,.25); }
     .review-form { display: grid; gap: 10px; max-width: 540px; margin: 16px 0 24px; }
-    .review-form select, .review-form textarea { padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
+    .star-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+    .star-btn { padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(128,128,128,.45); background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; transition: all .15s ease; }
+    .star-btn.active { background: #e8590c; border-color: #e8590c; color: #fff; }
+    .review-form textarea { padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
+    .review-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .review-list { display: grid; gap: 12px; max-width: 720px; }
     .review-card { padding: 14px 16px; border: 1px solid rgba(128,128,128,.3); border-radius: 14px; }
-    .review-head { display: flex; justify-content: space-between; gap: 12px; }
+    .review-card.mine { border-color: #e8590c; }
+    .review-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .stars-gold { color: #f59f00; letter-spacing: 1px; }
+    .badge-you { display: inline-block; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(232,89,12,.2); color: #e8590c; font-size: .78rem; }
     .review-body { margin: 8px 0 0; }
     .muted { opacity: .75; }
     .error { color: #e5484d; font-weight: 600; margin: 0; }
@@ -150,6 +179,7 @@ export class RestaurantDetail implements OnInit {
   dishes = signal<Dish[]>([]);
   reviews = signal<Review[]>([]);
 
+  myReviewId = signal<string | null>(null);
   note = signal(5);
   commentaire = signal('');
   submittingReview = signal(false);
@@ -170,10 +200,34 @@ export class RestaurantDetail implements OnInit {
     });
   }
 
+  starLabel(n: number) {
+    return STAR_LABELS[n] || `${n} ★`;
+  }
+
   loadReviews(id: string) {
     this.reviewService.listByRestaurant(id).subscribe({
       next: (res) => {
-        this.reviews.set(res.reviews || []);
+        const list = res.reviews || [];
+        this.reviews.set(list);
+
+        // Si l'utilisateur connecté a déjà publié un avis sur ce restaurant, on pré-remplit le formulaire
+        const currentUser = this.auth.user() as any;
+        const currentUserId = currentUser?.id || currentUser?._id;
+        const existing = currentUserId
+          ? list.find((rev) => {
+              const authorId = typeof rev.client === 'object' ? rev.client?._id : rev.client;
+              return authorId && String(authorId) === String(currentUserId);
+            })
+          : undefined;
+
+        if (existing) {
+          this.myReviewId.set(existing._id);
+          this.note.set(existing.note);
+          this.commentaire.set(existing.commentaire || '');
+        } else {
+          this.myReviewId.set(null);
+        }
+
         const current = this.restaurant();
         if (current) {
           this.restaurant.set({
@@ -207,7 +261,6 @@ export class RestaurantDetail implements OnInit {
       next: (res) => {
         this.submittingReview.set(false);
         this.reviewSuccess.set('Votre avis a été enregistré.');
-        this.commentaire.set('');
         this.restaurant.set({
           ...r,
           noteMoyenne: res.noteMoyenne,
@@ -218,6 +271,31 @@ export class RestaurantDetail implements OnInit {
       error: (err) => {
         this.submittingReview.set(false);
         this.reviewError.set(err.error?.message || "Impossible d'enregistrer l'avis.");
+      }
+    });
+  }
+
+  deleteMyReview() {
+    const id = this.myReviewId();
+    const r = this.restaurant();
+    if (!id || !r) return;
+    if (!confirm('Supprimer votre avis ?')) return;
+
+    this.reviewService.deleteReview(id).subscribe({
+      next: (res) => {
+        this.myReviewId.set(null);
+        this.note.set(5);
+        this.commentaire.set('');
+        this.reviewSuccess.set('Votre avis a été supprimé.');
+        this.restaurant.set({
+          ...r,
+          noteMoyenne: res.noteMoyenne,
+          nombreAvis: res.nombreAvis
+        });
+        this.loadReviews(r._id);
+      },
+      error: (err) => {
+        this.reviewError.set(err.error?.message || "Impossible de supprimer l'avis.");
       }
     });
   }
