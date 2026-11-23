@@ -25,6 +25,18 @@ async function recalculateRestaurantRating(restaurantId) {
   return { noteMoyenne, nombreAvis };
 }
 
+// GET /api/reviews/latest?limit=6 (public : derniers avis pour la page d'accueil)
+export async function listLatestReviews(limit = 6) {
+  const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 6, 1), 12);
+  const reviews = await Review.find({})
+    .populate('client', 'nom prenom')
+    .populate('restaurant', 'nom typeCuisine')
+    .sort({ createdAt: -1 })
+    .limit(safeLimit);
+
+  return reviews.filter((r) => r.restaurant);
+}
+
 // GET /api/reviews/restaurant/:restaurantId (public)
 export async function listRestaurantReviews(restaurantId) {
   if (!mongoose.Types.ObjectId.isValid(restaurantId)) {

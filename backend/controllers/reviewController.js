@@ -1,6 +1,12 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import * as reviewService from '../services/reviewService.js';
 
+// GET /api/reviews/latest
+export const latest = asyncHandler(async (req, res) => {
+  const reviews = await reviewService.listLatestReviews(req.query.limit);
+  res.json({ success: true, reviews });
+});
+
 // GET /api/reviews/restaurant/:restaurantId
 export const byRestaurant = asyncHandler(async (req, res) => {
   const data = await reviewService.listRestaurantReviews(req.params.restaurantId);

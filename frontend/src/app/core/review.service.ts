@@ -8,9 +8,15 @@ export interface ReviewAuthor {
   prenom: string;
 }
 
+export interface ReviewRestaurantRef {
+  _id: string;
+  nom: string;
+  typeCuisine?: string;
+}
+
 export interface Review {
   _id: string;
-  restaurant: string;
+  restaurant: ReviewRestaurantRef | string;
   client: ReviewAuthor | string;
   order?: string | null;
   note: number;
@@ -35,6 +41,12 @@ export interface UpsertReviewResponse {
 @Injectable({ providedIn: 'root' })
 export class ReviewService {
   private http = inject(HttpClient);
+
+  latest(limit = 3) {
+    return this.http.get<{ success: boolean; reviews: Review[] }>(
+      `${API_URL}/reviews/latest?limit=${limit}`
+    );
+  }
 
   listByRestaurant(restaurantId: string) {
     return this.http.get<RestaurantReviewsResponse>(`${API_URL}/reviews/restaurant/${restaurantId}`);
