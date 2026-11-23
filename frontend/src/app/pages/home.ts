@@ -71,14 +71,13 @@ import { Icon } from '../core/icon';
       @if (!restaurants().length) { <p class="results-count">Aucun restaurant pour cette cuisine pour le moment.</p> }
     </div></section>
 
-    <!-- Section Avis Clients : derniers retours publiés -->
+    <!-- Section Avis Clients : jusqu'à 3 derniers avis affichés sans lien -->
     <section class="section home-reviews"><div class="container">
       <div class="section-heading">
         <div>
           <p class="eyebrow">ILS ONT GOÛTÉ, ILS RACONTENT.</p>
           <h2>Les derniers avis<span class="text-primary">.</span></h2>
         </div>
-        <a routerLink="/restaurants" class="text-link">Noter un restaurant <app-icon name="arrow-right"></app-icon></a>
       </div>
 
       @if (!latestReviews().length) {
@@ -96,9 +95,7 @@ import { Icon } from '../core/icon';
               </p>
               <div class="home-review-foot">
                 <strong>{{ authorName(rev) }}</strong>
-                @if (restaurantIdOf(rev); as rId) {
-                  <a [routerLink]="['/restaurants', rId]" class="text-link">{{ restaurantNameOf(rev) }} →</a>
-                }
+                <span class="restaurant-label">{{ restaurantNameOf(rev) }}</span>
               </div>
             </article>
           }
@@ -132,6 +129,7 @@ import { Icon } from '../core/icon';
     .home-review-stars { color: #f59f00; font-size: 1.05rem; letter-spacing: 1px; }
     .home-review-text { margin: 0; line-height: 1.5; opacity: .9; }
     .home-review-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid rgba(128,128,128,.2); font-size: .9rem; }
+    .restaurant-label { color: #e8590c; font-weight: 600; }
   `]
 })
 export class Home implements OnInit {
@@ -139,10 +137,9 @@ export class Home implements OnInit {
   private reviewService = inject(ReviewService);
 
   restaurants = signal<Restaurant[]>([]); // restaurants affichés
-  latestReviews = signal<Review[]>([]);     // derniers avis clients
+  latestReviews = signal<Review[]>([]);     // jusqu'à 3 derniers avis clients
   cuisine = signal('Tous');               // cuisine sélectionnée
 
-  // Les noms (name) correspondent EXACTEMENT aux valeurs de typeCuisine dans la base de données
   cuisines = [
     { name: 'Tous', label: 'Tous', icon: 'utensils' }, { name: 'Pizza', label: 'Pizzas', icon: 'pizza' },
     { name: 'Fast-food', label: 'Burgers', icon: 'sandwich' }, { name: 'Tunisien', label: 'Tunisien', icon: 'utensils' },
@@ -160,7 +157,6 @@ export class Home implements OnInit {
     this.loadLatestReviews();
   }
 
-  // Choisir une cuisine puis recharger la liste
   choose(name: string) { this.cuisine.set(name); this.load(); }
 
   authorName(rev: Review): string {
@@ -170,19 +166,13 @@ export class Home implements OnInit {
     return 'Client';
   }
 
-  restaurantIdOf(rev: Review): string | null {
-    if (!rev.restaurant) return null;
-    return typeof rev.restaurant === 'string' ? rev.restaurant : rev.restaurant._id || null;
-  }
-
   restaurantNameOf(rev: Review): string {
     if (rev.restaurant && typeof rev.restaurant === 'object') {
-      return rev.restaurant.nom || 'Voir le restaurant';
+      return rev.restaurant.nom || '';
     }
-    return 'Voir le restaurant';
+    return '';
   }
 
-  // Appel API : 6 restaurants maximum sur l'accueil
   private load() {
     const typeCuisine = this.cuisine() === 'Tous' ? undefined : this.cuisine();
     this.service.list({ typeCuisine, limit: 6 }).subscribe({
