@@ -16,6 +16,8 @@ export interface Restaurant {
   fraisLivraison: number;
   horaires: string;
   isOpen: boolean;
+  noteMoyenne?: number;
+  nombreAvis?: number;
 }
 // Une catégorie du menu (Pizzas, Boissons...)
 export interface Category { _id: string; nom: string; }

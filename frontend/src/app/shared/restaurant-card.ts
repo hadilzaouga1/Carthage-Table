@@ -31,7 +31,12 @@ import { AuthService } from '../core/auth.service';
       <div class="restaurant-content">
         <div class="restaurant-title">
           <h3><a [routerLink]="['/restaurants', r()._id]">{{ r().nom }}</a></h3>
-          <span class="rating"><app-icon name="star"></app-icon>4.8</span>
+          <span class="rating">
+            <app-icon name="star"></app-icon>{{ displayRating() }}
+            @if ((r().nombreAvis ?? 0) > 0) {
+              <small> ({{ r().nombreAvis }})</small>
+            }
+          </span>
         </div>
         <p class="restaurant-subtitle">{{ r().typeCuisine }} · {{ r().adresse }}</p>
         <div class="restaurant-meta">
@@ -49,6 +54,13 @@ export class RestaurantCard {
 
   r = input.required<Restaurant>();  // le restaurant à afficher (donné par le parent)
   failed = signal(false);            // true si la photo du restaurant est introuvable
+
+  displayRating = computed(() => {
+    const count = this.r().nombreAvis ?? 0;
+    const avg = this.r().noteMoyenne ?? 0;
+    if (count > 0) return avg.toFixed(1);
+    return '4.8';
+  });
 
   // Adresse de la photo : photo par défaut si absente ou introuvable,
   // lien complet (https://...) utilisé tel quel, sinon fichier du dossier public/img
