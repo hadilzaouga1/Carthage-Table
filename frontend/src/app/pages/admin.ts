@@ -1,13 +1,7 @@
-// Page Administration : statistiques, restaurants (créer, modifier, valider, supprimer),
-// catégories de cuisine et utilisateurs (recherche, rôle, activation).
+// Page Administration : statistiques, restaurants (créer, modifier, supprimer, valider), cuisines, utilisateurs.
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { AdminService, AdminStats, AdminRestaurant, AdminUser } from '../core/admin.service';
 import { CuisineService, Cuisine } from '../core/cuisine.service';
-
-const STATUT_LABELS: Record<string, string> = {
-  en_attente: 'En attente', acceptee: 'Acceptées', en_preparation: 'En préparation',
-  en_livraison: 'En livraison', livree: 'Livrées', annulee: 'Annulées'
-};
 
 @Component({
   selector: 'app-admin',
@@ -27,51 +21,34 @@ const STATUT_LABELS: Record<string, string> = {
           <div class="stat"><small>Commandes</small><strong>{{ stats()!.commandes }}</strong></div>
           <div class="stat"><small>Chiffre d'affaires</small><strong>{{ stats()!.chiffreAffaires.toFixed(2) }} DT</strong></div>
         </div>
-        @if (statutsList().length) {
-          <p class="top"><strong>Commandes par statut :</strong>
-            @for (s of statutsList(); track s.label; let last = $last) { {{ s.label }} ({{ s.nombre }}){{ last ? '' : ' · ' }} }
-          </p>
-        }
-        @if (stats()!.restaurantsPopulaires?.length) {
-          <p class="top"><strong>Restaurants les plus actifs :</strong>
-            @for (r of stats()!.restaurantsPopulaires!; track r.nom; let last = $last) { {{ r.nom }} ({{ r.commandes }}){{ last ? '' : ' · ' }} }
-          </p>
-        }
       }
 
       <div class="tabs">
         <button type="button" class="btn-ghost" [class.selected]="tab() === 'restaurants'" (click)="tab.set('restaurants')">Restaurants</button>
-        <button type="button" class="btn-ghost" [class.selected]="tab() === 'cuisines'" (click)="tab.set('cuisines')">Catégories de cuisine</button>
+        <button type="button" class="btn-ghost" [class.selected]="tab() === 'cuisines'" (click)="tab.set('cuisines')">Cuisines</button>
         <button type="button" class="btn-ghost" [class.selected]="tab() === 'users'" (click)="tab.set('users')">Utilisateurs</button>
       </div>
 
-      <!-- ===== RESTAURANTS ===== -->
+      <!-- ===================== RESTAURANTS ===================== -->
       @if (tab() === 'restaurants') {
-        <button type="button" class="btn-tomato" (click)="toggleForm()">{{ showForm() ? 'Fermer le formulaire' : '+ Créer un restaurant' }}</button>
+        <!-- Création d'un restaurant par l'admin : il est validé tout de suite -->
+        <button type="button" class="btn-tomato" (click)="showForm.set(!showForm())">{{ showForm() ? 'Fermer le formulaire' : '+ Créer un restaurant' }}</button>
 
         @if (showForm()) {
           <div class="form">
-            <h3>{{ editingId() ? 'Modifier le restaurant' : 'Nouveau restaurant (validé tout de suite)' }}</h3>
             <input placeholder="Nom du restaurant *" [value]="nom()" (input)="nom.set($any($event.target).value)" />
             <input placeholder="Adresse *" [value]="adresse()" (input)="adresse.set($any($event.target).value)" />
             <select (change)="cuisine.set($any($event.target).value)">
               <option value="">Type de cuisine *</option>
-              @for (c of cuisineService.cuisines(); track c._id) { <option [value]="c.nom" [selected]="c.nom === cuisine()">{{ c.icon }} {{ c.nom }}</option> }
+              @for (c of cuisineNames(); track c) { <option [value]="c" [selected]="c === cuisine()">{{ c }}</option> }
             </select>
             <input placeholder="Frais de livraison en DT (ex : 5, vide = gratuit)" [value]="frais()" (input)="frais.set($any($event.target).value)" />
-            <input placeholder="Horaires (ex : 10:00 - 23:00)" [value]="horaires()" (input)="horaires.set($any($event.target).value)" />
-            <input placeholder="Description" [value]="description()" (input)="description.set($any($event.target).value)" />
-            @if (!editingId()) {
-              <select (change)="owner.set($any($event.target).value)">
-                <option value="">Propriétaire (restaurateur) *</option>
-                @for (u of restaurateurs(); track uid(u)) { <option [value]="uid(u)" [selected]="uid(u) === owner()">{{ u.prenom }} {{ u.nom }} · {{ u.email }}</option> }
-              </select>
-              @if (!restaurateurs().length) { <small>Aucun restaurateur : changez d'abord le rôle d'un utilisateur dans l'onglet Utilisateurs.</small> }
-            }
-            <div class="row">
-              <button type="button" class="btn-tomato" (click)="saveRestaurant()">{{ editingId() ? 'Enregistrer' : 'Créer le restaurant' }}</button>
-              @if (editingId()) { <button type="button" class="btn-ghost" (click)="resetForm()">Annuler</button> }
-            </div>
+            <select (change)="owner.set($any($event.target).value)">
+              <option value="">Propriétaire (restaurateur) *</option>
+              @for (u of restaurateurs(); track uid(u)) { <option [value]="uid(u)" [selected]="uid(u) === owner()">{{ u.prenom }} {{ u.nom }} · {{ u.email }}</option> }
+            </select>
+            @if (!restaurateurs().length) { <small>Aucun restaurateur : changez d'abord le rôle d'un utilisateur dans l'onglet Utilisateurs.</small> }
+            <button type="button" class="btn-tomato" (click)="create()">Créer le restaurant</button>
           </div>
         }
 
@@ -80,51 +57,77 @@ const STATUT_LABELS: Record<string, string> = {
             <button type="button" class="btn-ghost" [class.selected]="filter() === f.value" (click)="setFilter(f.value)">{{ f.label }}</button>
           }
         </div>
+
         @for (r of restaurants(); track r._id) {
           <div class="item">
             <div class="info"><strong>{{ r.nom }}</strong><small>{{ r.typeCuisine }} · {{ r.adresse }}</small></div>
-            <span class="badge" [attr.data-s]="r.status">{{ r.status }}</span>
+            <span class="badge" [attr.data-s]="r.status">{{ statusLabel(r.status) }}</span>
             @if (r.status !== 'valide') { <button type="button" class="btn-tomato" (click)="setStatus(r, 'valide')">Valider</button> }
             @if (r.status !== 'suspendu') { <button type="button" class="btn-ghost" (click)="setStatus(r, 'suspendu')">Suspendre</button> }
-            <button type="button" class="btn-ghost" (click)="editRestaurant(r)">Modifier</button>
+            <button type="button" class="btn-ghost" (click)="startEdit(r)">Modifier</button>
             <button type="button" class="btn-ghost" (click)="removeRestaurant(r)">Supprimer</button>
           </div>
+
+          <!-- Formulaire de modification (s'ouvre sous le restaurant choisi) -->
+          @if (editId() === r._id) {
+            <div class="form edit">
+              <input placeholder="Nom *" [value]="eNom()" (input)="eNom.set($any($event.target).value)" />
+              <input placeholder="Description" [value]="eDescription()" (input)="eDescription.set($any($event.target).value)" />
+              <input placeholder="Adresse *" [value]="eAdresse()" (input)="eAdresse.set($any($event.target).value)" />
+              <select (change)="eCuisine.set($any($event.target).value)">
+                @for (c of editCuisines(); track c) { <option [value]="c" [selected]="c === eCuisine()">{{ c }}</option> }
+              </select>
+              <input placeholder="Horaires (ex : 10:00 - 23:00)" [value]="eHoraires()" (input)="eHoraires.set($any($event.target).value)" />
+              <input placeholder="Frais de livraison en DT" [value]="eFrais()" (input)="eFrais.set($any($event.target).value)" />
+              <input placeholder="Photo (nom de fichier dans public/img ou lien https)" [value]="eImage()" (input)="eImage.set($any($event.target).value)" />
+              <div class="row">
+                <button type="button" class="btn-tomato" (click)="saveRestaurant(r)">Enregistrer</button>
+                <button type="button" class="btn-ghost" (click)="editId.set('')">Annuler</button>
+              </div>
+            </div>
+          }
         }
         @if (!restaurants().length) { <p>Aucun restaurant pour ce filtre.</p> }
       }
 
-      <!-- ===== CATÉGORIES DE CUISINE ===== -->
+      <!-- ===================== CUISINES ===================== -->
       @if (tab() === 'cuisines') {
+        <p class="hint">Les cuisines proposées aux clients (filtres de l'accueil) et aux restaurateurs (création de restaurant).</p>
+
         <div class="form">
-          <h3>{{ cuisineEditId() ? 'Modifier la catégorie' : 'Ajouter une catégorie de cuisine' }}</h3>
-          <input placeholder="Nom * (ex : Libanais)" [value]="cNom()" (input)="cNom.set($any($event.target).value)" />
-          <input placeholder="Emoji (ex : 🥙)" [value]="cIcon()" (input)="cIcon.set($any($event.target).value)" />
-          <input placeholder="Description" [value]="cDesc()" (input)="cDesc.set($any($event.target).value)" />
+          <h3>{{ editingCuisine() ? 'Modifier la cuisine' : 'Ajouter une cuisine' }}</h3>
+          <input placeholder="Nom de la cuisine * (ex : Libanais)" [value]="cNom()" (input)="cNom.set($any($event.target).value)" />
+          <input placeholder="Description" [value]="cDescription()" (input)="cDescription.set($any($event.target).value)" />
+          <select (change)="cIcon.set($any($event.target).value)">
+            @for (i of icons; track i.value) { <option [value]="i.value" [selected]="i.value === cIcon()">Icône : {{ i.label }}</option> }
+          </select>
           <div class="row">
-            <button type="button" class="btn-tomato" (click)="saveCuisine()">{{ cuisineEditId() ? 'Enregistrer' : 'Ajouter' }}</button>
-            @if (cuisineEditId()) { <button type="button" class="btn-ghost" (click)="resetCuisine()">Annuler</button> }
+            <button type="button" class="btn-tomato" (click)="saveCuisine()">{{ editingCuisine() ? 'Enregistrer' : 'Ajouter la cuisine' }}</button>
+            @if (editingCuisine()) { <button type="button" class="btn-ghost" (click)="resetCuisine()">Annuler</button> }
           </div>
         </div>
-        @for (c of cuisineService.cuisines(); track c._id) {
+
+        @for (c of cuisines(); track c._id) {
           <div class="item">
-            <span class="ico">{{ c.icon || '🍽️' }}</span>
-            <div class="info"><strong>{{ c.nom }}</strong><small>{{ c.description }}</small></div>
+            <div class="info"><strong>{{ c.nom }}</strong><small>{{ c.description || 'Aucune description' }} · {{ c.restaurants ?? 0 }} restaurant(s)</small></div>
             <button type="button" class="btn-ghost" (click)="editCuisine(c)">Modifier</button>
             <button type="button" class="btn-ghost" (click)="removeCuisine(c)">Supprimer</button>
           </div>
         }
+        @if (!cuisines().length) { <p>Aucune cuisine enregistrée. Ajoutez-en une ci-dessus (ou lancez « npm run seed:cuisines » dans le backend).</p> }
       }
 
-      <!-- ===== UTILISATEURS ===== -->
+      <!-- ===================== UTILISATEURS ===================== -->
       @if (tab() === 'users') {
-        <div class="row">
-          <input class="search" type="search" placeholder="Rechercher un utilisateur (nom, prénom, email)" [value]="search()" (input)="onSearch($any($event.target).value)" />
-          <select (change)="setRoleFilter($any($event.target).value)">
+        <div class="toolbar">
+          <input type="search" placeholder="Rechercher par nom, prénom ou email" aria-label="Rechercher un utilisateur" (input)="onUserSearch($any($event.target).value)" />
+          <select aria-label="Filtrer par rôle" (change)="setUserRole($any($event.target).value)">
             <option value="">Tous les rôles</option>
-            @for (r of roles; track r) { <option [value]="r" [selected]="roleFilter() === r">{{ r }}</option> }
+            @for (r of roles; track r) { <option [value]="r">{{ r }}</option> }
           </select>
+          <small>{{ userTotal() }} utilisateur(s)</small>
         </div>
-        <small>{{ usersTotal() }} utilisateur(s)</small>
+
         @for (u of users(); track uid(u)) {
           <div class="item">
             <div class="info"><strong>{{ u.prenom }} {{ u.nom }}</strong><small>{{ u.email }}{{ u.isActive === false ? ' · compte désactivé' : '' }}</small></div>
@@ -134,12 +137,13 @@ const STATUT_LABELS: Record<string, string> = {
             <button type="button" class="btn-ghost" (click)="toggleActive(u)">{{ u.isActive === false ? 'Réactiver' : 'Désactiver' }}</button>
           </div>
         }
-        @if (!users().length) { <p>Aucun utilisateur trouvé.</p> }
-        @if (usersPages() > 1) {
-          <div class="pager">
-            <button type="button" class="btn-ghost" [disabled]="usersPage() <= 1" (click)="goToUsersPage(usersPage() - 1)">Précédent</button>
-            <span>Page {{ usersPage() }} / {{ usersPages() }}</span>
-            <button type="button" class="btn-ghost" [disabled]="usersPage() >= usersPages()" (click)="goToUsersPage(usersPage() + 1)">Suivant</button>
+        @if (!users().length) { <p>Aucun utilisateur ne correspond.</p> }
+
+        @if (userPages() > 1) {
+          <div class="pagination">
+            <button type="button" class="btn-ghost" [disabled]="userPage() <= 1" (click)="goUsers(userPage() - 1)">← Précédent</button>
+            <span class="page-info">Page {{ userPage() }} / {{ userPages() }}</span>
+            <button type="button" class="btn-ghost" [disabled]="userPage() >= userPages()" (click)="goUsers(userPage() + 1)">Suivant →</button>
           </div>
         }
       }
@@ -149,56 +153,64 @@ const STATUT_LABELS: Record<string, string> = {
     .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
     .stat { padding: 14px 16px; border: 1px solid rgba(128,128,128,.3); border-radius: 16px; display: grid; gap: 4px; }
     .stat strong { font-size: 1.4rem; }
-    .top { margin: 6px 0; }
     .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 8px 0; }
     .form { display: grid; gap: 10px; max-width: 520px; margin: 16px 0; }
-    .form h3 { margin: 0; }
+    .form.edit { padding: 14px 16px; border: 1px dashed rgba(128,128,128,.5); border-radius: 14px; max-width: none; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0; }
+    .toolbar input { flex: 1; min-width: 220px; }
+    .hint { opacity: .7; margin: 8px 0; }
     input { padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
-    .search { flex: 1; min-width: 220px; }
     .item { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 16px; margin: 8px 0; border: 1px solid rgba(128,128,128,.3); border-radius: 14px; }
-    .info { flex: 1; min-width: 160px; display: grid; }
-    .ico { font-size: 1.8rem; }
+    .info { flex: 1; min-width: 180px; display: grid; }
     .badge { padding: 4px 12px; border-radius: 999px; font-size: .85rem; font-weight: 700; border: 1px solid rgba(128,128,128,.4); }
     .badge[data-s="en_attente"] { background: #f5a623; color: #000; }
     .badge[data-s="valide"] { background: #2e9e5b; color: #fff; }
     .badge[data-s="suspendu"] { background: #e5484d; color: #fff; }
     select { padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
-    .pager { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 20px; }
+    .page-info { align-self: center; }
     .error { color: #e5484d; font-weight: 600; }
     .success { color: #2e9e5b; font-weight: 600; }
   `]
 })
 export class Admin implements OnInit {
   private api = inject(AdminService);
-  cuisineService = inject(CuisineService);
+  private cuisineApi = inject(CuisineService);
 
   stats = signal<AdminStats | null>(null);
   restaurants = signal<AdminRestaurant[]>([]);
   restaurateurs = signal<AdminUser[]>([]);
+  cuisines = signal<Cuisine[]>([]);
+  cuisineNames = signal<string[]>([]);
   tab = signal<'restaurants' | 'cuisines' | 'users'>('restaurants');
   filter = signal('');
   error = signal('');
   success = signal('');
 
-  // Formulaire restaurant (création ou modification)
+  // Formulaire de création de restaurant
   showForm = signal(false);
-  editingId = signal('');
-  nom = signal(''); adresse = signal(''); cuisine = signal(''); frais = signal('');
-  horaires = signal(''); description = signal(''); owner = signal('');
+  nom = signal(''); adresse = signal(''); cuisine = signal(''); frais = signal(''); owner = signal('');
 
-  // Formulaire catégorie de cuisine
-  cuisineEditId = signal('');
-  cNom = signal(''); cIcon = signal(''); cDesc = signal('');
+  // Formulaire de modification d'un restaurant
+  editId = signal('');
+  eNom = signal(''); eDescription = signal(''); eAdresse = signal(''); eCuisine = signal(''); eHoraires = signal(''); eFrais = signal(''); eImage = signal('');
 
-  // Utilisateurs : recherche + pagination
+  // Formulaire des cuisines
+  editingCuisine = signal('');
+  cNom = signal(''); cDescription = signal(''); cIcon = signal('utensils');
+  icons = [
+    { value: 'utensils', label: 'couverts' }, { value: 'pizza', label: 'pizza' }, { value: 'sandwich', label: 'sandwich' },
+    { value: 'salad', label: 'salade' }, { value: 'cake-slice', label: 'dessert' }
+  ];
+
+  // Utilisateurs : recherche, filtre par rôle, pagination
   users = signal<AdminUser[]>([]);
-  search = signal('');
-  roleFilter = signal('');
-  usersPage = signal(1);
-  usersPages = signal(1);
-  usersTotal = signal(0);
-  private searchTimer: any;
+  userRole = signal('');
+  userPage = signal(1);
+  userPages = signal(1);
+  userTotal = signal(0);
+  private userSearch = '';
+  private timer: any; // délai pour ne pas appeler l'API à chaque lettre
 
   roles = ['client', 'restaurateur', 'admin'];
   filters = [
@@ -209,138 +221,136 @@ export class Admin implements OnInit {
   private fail = (err: any) => { this.success.set(''); this.error.set(err.error?.message || 'Une erreur est survenue.'); };
   private reset() { this.error.set(''); this.success.set(''); }
 
-  ngOnInit() {
-    this.cuisineService.load().subscribe({ error: () => {} });
-    this.loadAll();
-  }
+  ngOnInit() { this.loadAll(); }
 
   uid(u: AdminUser) { return u._id || u.id || u.email; }
+  statusLabel(s: string) { return ({ en_attente: 'à valider', valide: 'validé', suspendu: 'suspendu' } as Record<string, string>)[s] ?? s; }
 
-  // Commandes par statut, dans l'ordre du cycle de vie
-  statutsList() {
-    const data = this.stats()?.commandesParStatut ?? {};
-    return Object.keys(STATUT_LABELS).filter((k) => data[k]).map((k) => ({ label: STATUT_LABELS[k], nombre: data[k] }));
+  // Cuisines proposées dans le formulaire de modification (+ la cuisine actuelle si elle n'est plus dans la liste)
+  editCuisines() {
+    return this.eCuisine() && !this.cuisineNames().includes(this.eCuisine()) ? [this.eCuisine(), ...this.cuisineNames()] : this.cuisineNames();
   }
 
   private loadAll() {
     this.api.stats().subscribe({ next: (s) => this.stats.set(s), error: this.fail });
-    this.api.restaurants(this.filter() || undefined).subscribe({ next: (r) => this.restaurants.set(r), error: this.fail });
-    this.api.restaurateurs().subscribe({ next: (u) => this.restaurateurs.set(u), error: this.fail });
+    this.loadRestaurants();
+    this.loadCuisines();
     this.loadUsers();
+    this.api.restaurateurs().subscribe({ next: (u) => this.restaurateurs.set(u), error: this.fail });
   }
+
+  private loadRestaurants() {
+    this.api.restaurants(this.filter() || undefined).subscribe({ next: (r) => this.restaurants.set(r), error: this.fail });
+  }
+  private loadCuisines() {
+    this.cuisineApi.listRaw().subscribe({
+      next: (c) => { this.cuisines.set(c); this.cuisineNames.set(c.map((x) => x.nom)); },
+      error: this.fail
+    });
+  }
+  private loadUsers() {
+    this.api.users({ search: this.userSearch || undefined, role: this.userRole() || undefined, page: this.userPage(), limit: 10 }).subscribe({
+      next: (r) => { this.users.set(r.users); this.userPages.set(r.pages); this.userTotal.set(r.total); },
+      error: this.fail
+    });
+  }
+
+  setFilter(v: string) { this.filter.set(v); this.loadRestaurants(); }
 
   // ---------- Restaurants ----------
-  setFilter(v: string) { this.filter.set(v); this.loadAll(); }
-
-  toggleForm() {
-    if (this.showForm()) this.resetForm();
-    else this.showForm.set(true);
-  }
-
-  resetForm() {
-    this.showForm.set(false); this.editingId.set('');
-    this.nom.set(''); this.adresse.set(''); this.cuisine.set(''); this.frais.set('');
-    this.horaires.set(''); this.description.set(''); this.owner.set('');
-  }
-
-  // Remplit le formulaire avec le restaurant à modifier
-  editRestaurant(r: AdminRestaurant) {
-    this.editingId.set(r._id); this.showForm.set(true);
-    this.nom.set(r.nom); this.adresse.set(r.adresse); this.cuisine.set(r.typeCuisine);
-    this.frais.set(String(r.fraisLivraison ?? 0)); this.horaires.set(r.horaires ?? ''); this.description.set(r.description ?? '');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // Créer (l'admin choisit le propriétaire, restaurant validé d'office) ou modifier
-  saveRestaurant() {
+  create() {
     this.reset();
-    const editing = !!this.editingId();
-    if (!this.nom().trim() || !this.adresse().trim() || !this.cuisine() || (!editing && !this.owner())) {
-      this.error.set(editing ? 'Nom, adresse et cuisine sont obligatoires.' : 'Nom, adresse, cuisine et propriétaire sont obligatoires.');
+    if (!this.nom().trim() || !this.adresse().trim() || !this.cuisine() || !this.owner()) {
+      this.error.set('Nom, adresse, cuisine et propriétaire sont obligatoires.');
       return;
     }
-    const data = {
+    this.api.createRestaurant({
       nom: this.nom().trim(), adresse: this.adresse().trim(), typeCuisine: this.cuisine(),
       fraisLivraison: Number(this.frais().replace(',', '.')) || 0, // champ vide = livraison gratuite
-      horaires: this.horaires().trim() || undefined, description: this.description().trim()
-    };
-    const request = editing
-      ? this.api.updateRestaurant(this.editingId(), data)
-      : this.api.createRestaurant({ ...data, owner: this.owner() });
-    request.subscribe({
-      next: () => { this.success.set(editing ? 'Restaurant modifié.' : 'Restaurant créé et validé.'); this.resetForm(); this.loadAll(); },
-      error: this.fail
-    });
-  }
-
-  setStatus(r: AdminRestaurant, status: string) {
-    this.reset();
-    this.api.setRestaurantStatus(r._id, status).subscribe({ next: () => this.loadAll(), error: this.fail });
-  }
-
-  removeRestaurant(r: AdminRestaurant) {
-    if (!confirm(`Supprimer « ${r.nom} » avec ses catégories et ses plats ?`)) return;
-    this.reset();
-    this.api.deleteRestaurant(r._id).subscribe({
-      next: () => { this.success.set('Restaurant supprimé.'); this.loadAll(); },
-      error: this.fail
-    });
-  }
-
-  // ---------- Catégories de cuisine ----------
-  resetCuisine() { this.cuisineEditId.set(''); this.cNom.set(''); this.cIcon.set(''); this.cDesc.set(''); }
-
-  editCuisine(c: Cuisine) {
-    this.cuisineEditId.set(c._id); this.cNom.set(c.nom); this.cIcon.set(c.icon ?? ''); this.cDesc.set(c.description ?? '');
-  }
-
-  saveCuisine() {
-    this.reset();
-    if (!this.cNom().trim()) { this.error.set('Le nom de la catégorie est obligatoire.'); return; }
-    const data = { nom: this.cNom().trim(), icon: this.cIcon().trim() || '🍽️', description: this.cDesc().trim() };
-    const editing = this.cuisineEditId();
-    const request = editing ? this.cuisineService.update(editing, data) : this.cuisineService.create(data);
-    request.subscribe({
+      owner: this.owner()
+    }).subscribe({
       next: () => {
-        this.success.set(editing ? 'Catégorie modifiée.' : 'Catégorie ajoutée.');
-        this.resetCuisine();
-        this.cuisineService.load().subscribe();
-        this.loadAll(); // les restaurants peuvent avoir été renommés
+        this.success.set('Restaurant créé et validé.');
+        this.nom.set(''); this.adresse.set(''); this.cuisine.set(''); this.frais.set(''); this.owner.set('');
+        this.showForm.set(false);
+        this.loadAll();
       },
       error: this.fail
     });
   }
 
-  removeCuisine(c: Cuisine) {
-    if (!confirm(`Supprimer la catégorie « ${c.nom} » ?`)) return;
+  // Valider ou suspendre un restaurant
+  setStatus(r: AdminRestaurant, status: string) {
     this.reset();
-    // Le serveur refuse si des restaurants utilisent encore cette cuisine
-    this.cuisineService.remove(c._id).subscribe({
-      next: () => { this.success.set('Catégorie supprimée.'); this.cuisineService.load().subscribe(); },
+    this.api.setRestaurantStatus(r._id, status).subscribe({ next: () => this.loadAll(), error: this.fail });
+  }
+
+  // Ouvre le formulaire de modification, prérempli
+  startEdit(r: AdminRestaurant) {
+    this.reset();
+    this.editId.set(r._id);
+    this.eNom.set(r.nom); this.eDescription.set(r.description ?? ''); this.eAdresse.set(r.adresse); this.eCuisine.set(r.typeCuisine);
+    this.eHoraires.set(r.horaires ?? ''); this.eFrais.set(String(r.fraisLivraison ?? 0)); this.eImage.set(r.image ?? '');
+  }
+
+  saveRestaurant(r: AdminRestaurant) {
+    this.reset();
+    const frais = Number(this.eFrais().replace(',', '.'));
+    if (!this.eNom().trim() || !this.eAdresse().trim() || !this.eCuisine() || isNaN(frais) || frais < 0) {
+      this.error.set('Nom, adresse, cuisine et frais de livraison (nombre positif) sont obligatoires.');
+      return;
+    }
+    this.api.updateRestaurant(r._id, {
+      nom: this.eNom().trim(), description: this.eDescription().trim(), adresse: this.eAdresse().trim(), typeCuisine: this.eCuisine(),
+      horaires: this.eHoraires().trim(), fraisLivraison: frais, image: this.eImage().trim()
+    }).subscribe({
+      next: () => { this.success.set('Restaurant modifié.'); this.editId.set(''); this.loadAll(); },
       error: this.fail
     });
+  }
+
+  removeRestaurant(r: AdminRestaurant) {
+    if (!confirm(`Supprimer « ${r.nom} » avec toutes ses catégories et tous ses plats ? Cette action est définitive.`)) return;
+    this.reset();
+    this.api.deleteRestaurant(r._id).subscribe({ next: () => { this.success.set('Restaurant supprimé.'); this.loadAll(); }, error: this.fail });
+  }
+
+  // ---------- Cuisines ----------
+  editCuisine(c: Cuisine) {
+    this.reset();
+    this.editingCuisine.set(c._id); this.cNom.set(c.nom); this.cDescription.set(c.description ?? ''); this.cIcon.set(c.icon || 'utensils');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  resetCuisine() { this.editingCuisine.set(''); this.cNom.set(''); this.cDescription.set(''); this.cIcon.set('utensils'); }
+
+  saveCuisine() {
+    this.reset();
+    if (!this.cNom().trim()) { this.error.set('Le nom de la cuisine est obligatoire.'); return; }
+    const data = { nom: this.cNom().trim(), description: this.cDescription().trim(), icon: this.cIcon() };
+    const done = { next: () => { this.success.set(this.editingCuisine() ? 'Cuisine modifiée.' : 'Cuisine ajoutée.'); this.resetCuisine(); this.loadCuisines(); this.loadRestaurants(); }, error: this.fail };
+    if (this.editingCuisine()) this.cuisineApi.update(this.editingCuisine(), data).subscribe(done);
+    else this.cuisineApi.create(data).subscribe(done);
+  }
+
+  removeCuisine(c: Cuisine) {
+    if (!confirm(`Supprimer la cuisine « ${c.nom} » ?`)) return;
+    this.reset();
+    // Le serveur refuse si des restaurants utilisent encore cette cuisine
+    this.cuisineApi.remove(c._id).subscribe({ next: () => { this.success.set('Cuisine supprimée.'); this.loadCuisines(); }, error: this.fail });
   }
 
   // ---------- Utilisateurs ----------
-  private loadUsers() {
-    this.api.users({ search: this.search() || undefined, role: this.roleFilter() || undefined, page: this.usersPage() }).subscribe({
-      next: (p) => { this.users.set(p.users); this.usersTotal.set(p.total); this.usersPages.set(p.pages || 1); },
-      error: this.fail
-    });
+  onUserSearch(text: string) {
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => { this.userSearch = text.trim(); this.userPage.set(1); this.loadUsers(); }, 300);
   }
-
-  // Recherche avec un petit délai pour ne pas appeler l'API à chaque lettre
-  onSearch(text: string) {
-    this.search.set(text.trim());
-    clearTimeout(this.searchTimer);
-    this.searchTimer = setTimeout(() => { this.usersPage.set(1); this.loadUsers(); }, 300);
-  }
-  setRoleFilter(role: string) { this.roleFilter.set(role); this.usersPage.set(1); this.loadUsers(); }
-  goToUsersPage(p: number) { this.usersPage.set(p); this.loadUsers(); }
+  setUserRole(role: string) { this.userRole.set(role); this.userPage.set(1); this.loadUsers(); }
+  goUsers(p: number) { this.userPage.set(p); this.loadUsers(); }
 
   setRole(u: AdminUser, role: string) {
     this.reset();
-    this.api.setRole(this.uid(u)!, role).subscribe({ next: () => this.loadAll(), error: (e) => { this.fail(e); this.loadAll(); } });
+    this.api.setRole(this.uid(u)!, role).subscribe({ next: () => this.loadAll(), error: (e) => { this.fail(e); this.loadUsers(); } });
   }
 
   toggleActive(u: AdminUser) {

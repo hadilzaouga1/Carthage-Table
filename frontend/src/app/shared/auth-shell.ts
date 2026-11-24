@@ -15,8 +15,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
         <img src="img/pizzeria.jpg" alt="" (error)="hide($event)" />
         <div class="shade"></div>
         <div class="quote">
-          <span class="crest">CT</span>
-          <h2>À la table<br />de Carthage</h2>
+          <img class="crest" src="img/restora-logo.png" alt="Restora" />
+          <h2>Découvrez.<br />Commandez.<br />Savourez.</h2>
           <p>Des saveurs authentiques, livrées chez vous.</p>
           <ul>
             <li>Restaurants partenaires sélectionnés</li>
@@ -50,7 +50,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
     .visual img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; max-width: none; }
     .shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(5, 15, 10, 0.95) 5%, rgba(5, 15, 10, 0.3) 70%); }
     .quote { position: relative; padding: 48px; color: #f8efe0; }  /* texte toujours clair : le fond est sombre */
-    .crest { display: grid; place-items: center; width: 46px; height: 46px; border: 2px solid var(--gold); color: var(--gold); border-radius: 6px; font-family: var(--font-display); margin-bottom: 19px; }
+    .crest { width: 74px; height: auto; margin-bottom: 19px; }
     .quote h2 { color: var(--gold); font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 4vw, 51px); line-height: 1.1; margin-bottom: 13px; }
     .quote ul { list-style: none; padding: 0; margin: 19px 0 0; }
     .quote li { margin-bottom: 7px; opacity: 0.85; }

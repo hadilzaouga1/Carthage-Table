@@ -16,8 +16,6 @@ export interface Restaurant {
   fraisLivraison: number;
   horaires: string;
   isOpen: boolean;
-  noteMoyenne?: number;
-  nombreAvis?: number;
 }
 // Une catégorie du menu (Pizzas, Boissons...)
 export interface Category { _id: string; nom: string; }
@@ -28,6 +26,7 @@ export interface Dish {
   description: string;
   prix: number;
   icon: string;
+  image?: string;    // photo du plat (nom de fichier dans public/img ou lien https)
   disponible: boolean;
   categorie: string; // id de la catégorie
 }
@@ -41,11 +40,12 @@ export class RestaurantService {
   private http = inject(HttpClient); // client HTTP d'Angular
 
   // Liste avec recherche / filtre de cuisine / ouverts seulement / page
-  list(options: { search?: string; typeCuisine?: string; open?: boolean; page?: number; limit?: number } = {}): Observable<RestaurantPage> {
+  list(options: { search?: string; typeCuisine?: string; open?: boolean; sort?: 'asc' | 'desc'; page?: number; limit?: number } = {}): Observable<RestaurantPage> {
     let params = new HttpParams();
     if (options.search) params = params.set('search', options.search);
     if (options.typeCuisine) params = params.set('typeCuisine', options.typeCuisine);
     if (options.open) params = params.set('open', 'true');
+    if (options.sort === 'desc') params = params.set('sort', 'desc'); // Z→A (A→Z par défaut)
     if (options.page) params = params.set('page', options.page);
     if (options.limit) params = params.set('limit', options.limit);
     return this.http.get<RestaurantPage>(`${API_URL}/restaurants`, { params });

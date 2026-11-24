@@ -3,7 +3,7 @@ import Restaurant from '../models/Restaurant.js';
 import Category from '../models/Category.js';
 import Dish from '../models/Dish.js';
 import { loadManagedRestaurant, httpError } from '../utils/ownership.js';
-import { assertKnownCuisine } from '../services/cuisineService.js';
+import { assertCuisineExists } from '../services/cuisineService.js';
 
 // Protège la recherche : les caractères spéciaux sont neutralisés avant d'être utilisés dans une regex
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -30,7 +30,8 @@ export const list = async (req, res, next) => {
     if (cuisine && cuisine !== 'Tous') filter.typeCuisine = String(cuisine);
     if (open === 'true') filter.isOpen = true;
 
-    const order = sort === 'recent' ? { createdAt: -1 } : { nom: 1 }; // alphabétique par défaut
+    // A→Z par défaut ; sort=desc pour Z→A ; sort=recent pour les plus récents
+    const order = sort === 'recent' ? { createdAt: -1 } : { nom: sort === 'desc' ? -1 : 1 };
     const [items, total] = await Promise.all([
       Restaurant.find(filter).sort(order).collation({ locale: 'fr' }).skip((page - 1) * limit).limit(limit),
       Restaurant.countDocuments(filter),
@@ -58,7 +59,7 @@ export const listAll = async (req, res, next) => {
     if (cuisine && cuisine !== 'Tous') filter.typeCuisine = String(cuisine);
     if (open === 'true') filter.isOpen = true;
 
-    const order = sort === 'recent' ? { createdAt: -1 } : { nom: 1 };
+    const order = sort === 'recent' ? { createdAt: -1 } : { nom: sort === 'desc' ? -1 : 1 };
     const [items, total] = await Promise.all([
       Restaurant.find(filter).sort(order).collation({ locale: 'fr' }).skip((page - 1) * limit).limit(limit),
       Restaurant.countDocuments(filter),
@@ -104,11 +105,11 @@ export const getOne = async (req, res, next) => {
 export const create = async (req, res, next) => {
   try {
     const data = pick(req.body, WRITABLE);
-    await assertKnownCuisine(data.typeCuisine); // le type de cuisine doit exister (géré par l'admin)
     const isAdmin = req.user.role === 'admin';
     // Un restaurateur crée pour lui-même, en attente de validation ; l'admin peut désigner le propriétaire.
     data.owner = isAdmin && req.body.owner ? req.body.owner : req.user._id;
     data.status = isAdmin ? req.body.status || 'valide' : 'en_attente';
+    await assertCuisineExists(data.typeCuisine); // la cuisine doit exister dans la liste de l'admin
     const restaurant = await Restaurant.create(data);
     res.status(201).json({ success: true, restaurant });
   } catch (err) {
@@ -121,7 +122,7 @@ export const update = async (req, res, next) => {
   try {
     const restaurant = await loadManagedRestaurant(req.params.id, req.user);
     const changes = pick(req.body, WRITABLE);
-    await assertKnownCuisine(changes.typeCuisine);
+    if (changes.typeCuisine !== undefined) await assertCuisineExists(changes.typeCuisine);
     Object.assign(restaurant, changes);
     // Seul l'admin valide ou suspend un restaurant partenaire
     if (req.user.role === 'admin' && req.body.status) restaurant.status = req.body.status;

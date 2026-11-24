@@ -1,7 +1,8 @@
-// Page « Tous les restaurants » : recherche, filtre par cuisine, ouverts seulement, pagination.
+// Page « Tous les restaurants » : recherche, filtre par cuisine, ouverts seulement, tri A→Z / Z→A, pagination.
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { CuisineService } from '../core/cuisine.service';
+import { ActivatedRoute } from '@angular/router';
 import { RestaurantService, Restaurant } from '../core/restaurant.service';
+import { CuisineService } from '../core/cuisine.service';
 import { RestaurantCard } from '../shared/restaurant-card';
 import { Icon } from '../core/icon';
 
@@ -21,16 +22,20 @@ import { Icon } from '../core/icon';
       <!-- Barre de recherche : on cherche pendant que l'utilisateur tape -->
       <div class="search-bar">
         <app-icon name="search"></app-icon>
-        <input type="search" placeholder="Rechercher un restaurant..." (input)="onSearch($any($event.target).value)" />
+        <input type="search" placeholder="Rechercher un restaurant..." [value]="search" (input)="onSearch($any($event.target).value)" />
       </div>
 
       <!-- Filtre par type de cuisine + bouton "ouverts seulement" -->
       <div class="cuisine-row">
-        <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === 'Tous'" (click)="chooseCuisine('Tous')">Tous</button>
-        @for (c of cuisineService.cuisines(); track c._id) {
-          <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === c.nom" (click)="chooseCuisine(c.nom)">{{ c.icon }} {{ c.nom }}</button>
+        @for (c of cuisines(); track c) {
+          <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === c" (click)="chooseCuisine(c)">{{ c }}</button>
         }
         <button type="button" class="btn-ghost cuisine-button" [class.selected]="onlyOpen()" (click)="toggleOpen()">Ouverts seulement</button>
+        <!-- Tri alphabétique (cahier des charges, module 2) -->
+        <select class="field sort-select" aria-label="Trier les restaurants" (change)="setSort($any($event.target).value)">
+          <option value="asc" [selected]="sortDir() === 'asc'">A → Z</option>
+          <option value="desc" [selected]="sortDir() === 'desc'">Z → A</option>
+        </select>
       </div>
 
       <p class="results-count">{{ total() }} restaurant(s) trouvé(s)</p>
@@ -60,7 +65,8 @@ import { Icon } from '../core/icon';
 })
 export class Restaurants implements OnInit {
   private service = inject(RestaurantService);
-  cuisineService = inject(CuisineService);
+  private cuisineApi = inject(CuisineService);
+  private route = inject(ActivatedRoute);
 
   restaurants = signal<Restaurant[]>([]); // restaurants affichés
   total = signal(0);                      // nombre total trouvé
@@ -68,12 +74,22 @@ export class Restaurants implements OnInit {
   pages = signal(1);                      // nombre de pages
   cuisine = signal('Tous');               // cuisine choisie
   onlyOpen = signal(false);               // true = ouverts seulement
-  private search = '';                    // texte de recherche
+  search = '';                            // texte de recherche (rempli aussi depuis l'URL : /restaurants?search=pizza)
+  sortDir = signal<'asc' | 'desc'>('asc');  // ordre alphabétique
   private timer: any;                     // petit délai pour ne pas appeler l'API à chaque lettre
 
+  // Les cuisines viennent de l'API (gérées par l'administrateur)
+  cuisines = signal<string[]>(['Tous']);
+
   ngOnInit() {
-    this.cuisineService.load().subscribe({ error: () => {} }); // liste de secours si l'API ne répond pas
-    this.load();
+    this.cuisineApi.list().subscribe((list) => this.cuisines.set(['Tous', ...list.map((c) => c.nom)]));
+    // On suit l'adresse de la page : /restaurants?search=pizza&typeCuisine=Italien (liens depuis l'accueil)
+    this.route.queryParamMap.subscribe((p) => {
+      this.search = p.get('search') ?? '';
+      this.cuisine.set(p.get('typeCuisine') ?? 'Tous');
+      this.page.set(1);
+      this.load();
+    });
   }
 
   onSearch(text: string) {
@@ -82,6 +98,7 @@ export class Restaurants implements OnInit {
   }
   chooseCuisine(c: string) { this.cuisine.set(c); this.page.set(1); this.load(); }
   toggleOpen() { this.onlyOpen.set(!this.onlyOpen()); this.page.set(1); this.load(); }
+  setSort(dir: string) { this.sortDir.set(dir === 'desc' ? 'desc' : 'asc'); this.page.set(1); this.load(); }
   goTo(p: number) { this.page.set(p); this.load(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
   // Appel à l'API avec tous les filtres
@@ -90,6 +107,7 @@ export class Restaurants implements OnInit {
       search: this.search || undefined,
       typeCuisine: this.cuisine() === 'Tous' ? undefined : this.cuisine(),
       open: this.onlyOpen() || undefined,
+      sort: this.sortDir(),
       page: this.page(),
       limit: 12
     }).subscribe({

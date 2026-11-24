@@ -11,11 +11,11 @@ export interface CartLine {
 }
 
 export type PromoRule =
-  | { code: 'CARTHAGE10'; label: '-10 % sur le sous-total'; type: 'percent'; value: 10 }
+  | { code: 'RESTORA10'; label: '-10 % sur le sous-total'; type: 'percent'; value: 10 }
   | { code: 'BIENVENUE'; label: 'Livraison offerte'; type: 'free_delivery'; value: 0 };
 
 const PROMOS: Record<string, PromoRule> = {
-  CARTHAGE10: { code: 'CARTHAGE10', label: '-10 % sur le sous-total', type: 'percent', value: 10 },
+  RESTORA10: { code: 'RESTORA10', label: '-10 % sur le sous-total', type: 'percent', value: 10 },
   BIENVENUE: { code: 'BIENVENUE', label: 'Livraison offerte', type: 'free_delivery', value: 0 }
 };
 
@@ -119,7 +119,7 @@ export class CartService {
       return true;
     }
     if (!PROMOS[normalized]) {
-      this.promoError.set(`Code promo inconnu ("${normalized}"). Essayez CARTHAGE10 ou BIENVENUE.`);
+      this.promoError.set(`Code promo inconnu ("${normalized}"). Essayez RESTORA10 ou BIENVENUE.`);
       return false;
     }
     this.promoCode.set(normalized);

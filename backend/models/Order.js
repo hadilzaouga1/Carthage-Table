@@ -35,4 +35,8 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Index : mes commandes, commandes d'un restaurant, filtre par statut (performance)
+orderSchema.index({ client: 1, createdAt: -1 });
+orderSchema.index({ restaurant: 1, statut: 1, createdAt: -1 });
+
 export default mongoose.model('Order', orderSchema);

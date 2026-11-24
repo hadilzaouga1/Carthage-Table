@@ -3,8 +3,7 @@ import * as service from '../services/cuisineService.js';
 
 // GET /api/cuisines (public)
 export const list = asyncHandler(async (req, res) => {
-  const cuisines = await service.listCuisines();
-  res.json({ success: true, cuisines });
+  res.json({ success: true, cuisines: await service.listCuisines() });
 });
 
 // POST /api/cuisines (admin)
@@ -17,8 +16,8 @@ export const update = asyncHandler(async (req, res) => {
   res.json({ success: true, cuisine: await service.updateCuisine(req.params.id, req.body) });
 });
 
-// DELETE /api/cuisines/:id (admin)
+// DELETE /api/cuisines/:id (admin, refusée si la cuisine est utilisée)
 export const remove = asyncHandler(async (req, res) => {
   await service.deleteCuisine(req.params.id);
-  res.json({ success: true, message: 'Catégorie de cuisine supprimée.' });
+  res.json({ success: true, message: 'Cuisine supprimée' });
 });

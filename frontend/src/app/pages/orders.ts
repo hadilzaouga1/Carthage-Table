@@ -1,9 +1,8 @@
-// Page « Mes commandes » : le client suit le statut de ses commandes (rafraîchi toutes les 8 secondes) et peut noter les commandes livrées.
+// Page « Mes commandes » : le client suit le statut de ses commandes (rafraîchi toutes les 8 secondes).
 import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { OrderService, Order, OrderStatus } from '../core/order.service';
-import { ReviewService } from '../core/review.service';
 
 // Les étapes du cycle de vie d'une commande (dans l'ordre)
 const STEPS: OrderStatus[] = ['en_attente', 'acceptee', 'en_preparation', 'en_livraison', 'livree'];
@@ -28,11 +27,7 @@ const LABELS: Record<string, string> = {
       @for (o of orders(); track o._id) {
         <article class="order">
           <div class="order-head">
-            @if (restaurantIdOf(o); as rId) {
-              <a [routerLink]="['/restaurants', rId]"><strong>{{ o.restaurant.nom }}</strong></a>
-            } @else {
-              <strong>{{ o.restaurant.nom }}</strong>
-            }
+            <strong>{{ o.restaurant.nom }}</strong>
             <span>{{ o.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
           </div>
 
@@ -61,43 +56,6 @@ const LABELS: Record<string, string> = {
           @if (o.statut === 'en_attente') {
             <div><button type="button" class="btn-ghost" (click)="cancel(o)">Annuler la commande</button></div>
           }
-
-          @if (o.statut === 'livree') {
-            <div class="rate-box">
-              @if (ratingOrderId() !== o._id) {
-                <button type="button" class="btn-ghost" (click)="openRating(o)">Noter ce restaurant</button>
-              } @else {
-                <div class="rate-form">
-                  <label>Votre note : <strong>{{ draftNote() }} / 5</strong></label>
-                  <div class="star-picker">
-                    @for (s of [1, 2, 3, 4, 5]; track s) {
-                      <button
-                        type="button"
-                        class="star-btn"
-                        [class.active]="draftNote() >= s"
-                        (click)="draftNote.set(s)"
-                      >
-                        ★ {{ s }}
-                      </button>
-                    }
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Commentaire (facultatif)"
-                    [value]="draftComment()"
-                    (input)="draftComment.set($any($event.target).value)"
-                  />
-                  <div class="rate-actions">
-                    <button type="button" class="btn-tomato" (click)="sendRating(o)">Envoyer l'avis</button>
-                    <button type="button" class="btn-ghost" (click)="ratingOrderId.set(null)">Fermer</button>
-                  </div>
-                </div>
-              }
-              @if (ratedOrderIds().has(o._id)) {
-                <p class="rated-msg">Avis enregistré pour {{ o.restaurant.nom }}.</p>
-              }
-            </div>
-          }
         </article>
       }
     </div></section>
@@ -110,28 +68,14 @@ const LABELS: Record<string, string> = {
     .step.done { opacity: 1; background: #e8590c; border-color: #e8590c; color: #fff; font-weight: 700; }
     .discount { color: #2f9e44; font-weight: 700; margin: 0; }
     .cancelled { color: #e5484d; font-weight: 700; }
-    .rate-box { margin-top: 6px; }
-    .rate-form { display: grid; gap: 8px; max-width: 460px; }
-    .star-picker { display: flex; flex-wrap: wrap; gap: 6px; }
-    .star-btn { padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(128,128,128,.45); background: transparent; color: inherit; font: inherit; font-weight: 700; cursor: pointer; }
-    .star-btn.active { background: #e8590c; border-color: #e8590c; color: #fff; }
-    .rate-form input { padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
-    .rate-actions { display: flex; gap: 8px; }
-    .rated-msg { color: #2f9e44; font-weight: 600; margin: 4px 0 0; }
     ul { margin: 0; padding-left: 18px; }
   `]
 })
 export class Orders implements OnInit, OnDestroy {
   private service = inject(OrderService);
-  private reviewService = inject(ReviewService);
   orders = signal<Order[]>([]);
   steps = STEPS;
   private timer: any;
-
-  ratingOrderId = signal<string | null>(null);
-  draftNote = signal(5);
-  draftComment = signal('');
-  ratedOrderIds = signal<Set<string>>(new Set());
 
   ngOnInit() {
     this.load();
@@ -145,39 +89,8 @@ export class Orders implements OnInit, OnDestroy {
   label(s: string) { return LABELS[s] || s; }
   stepIndex(s: OrderStatus) { return STEPS.indexOf(s); }
 
-  restaurantIdOf(o: Order): string | null {
-    if (!o.restaurant) return null;
-    return typeof o.restaurant === 'string' ? o.restaurant : o.restaurant._id || null;
-  }
-
   cancel(o: Order) {
     if (!confirm('Annuler cette commande ?')) return;
     this.service.cancel(o._id).subscribe({ next: () => this.load(), error: () => this.load() });
-  }
-
-  openRating(o: Order) {
-    this.ratingOrderId.set(o._id);
-    this.draftNote.set(5);
-    this.draftComment.set('');
-  }
-
-  sendRating(o: Order) {
-    const restId = this.restaurantIdOf(o);
-    if (!restId) return;
-
-    this.reviewService.submitReview({
-      restaurant: restId,
-      order: o._id,
-      note: this.draftNote(),
-      commentaire: this.draftComment().trim()
-    }).subscribe({
-      next: () => {
-        const nextSet = new Set(this.ratedOrderIds());
-        nextSet.add(o._id);
-        this.ratedOrderIds.set(nextSet);
-        this.ratingOrderId.set(null);
-      },
-      error: () => {}
-    });
   }
 }

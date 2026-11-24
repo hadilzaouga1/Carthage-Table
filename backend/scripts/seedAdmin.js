@@ -7,7 +7,7 @@ const users = [
   { 
     nom: 'Admin', 
     prenom: 'Super', 
-    email: 'admin@carthage-table.tn', 
+    email: 'admin@restora.tn', 
     telephone: '20000000', 
     password: 'Admin1234', 
     role: 'admin' 
@@ -15,7 +15,7 @@ const users = [
   { 
     nom: 'Ben Salah', 
     prenom: 'Karim', 
-    email: 'resto@carthage-table.tn', 
+    email: 'resto@restora.tn', 
     telephone: '21000000', 
     password: 'Resto1234', 
     role: 'restaurateur' 

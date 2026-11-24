@@ -12,13 +12,10 @@ import { Icon } from '../core/icon';
   template: `
     <header class="site-header">
       <div class="container header-inner">
-        <!-- Logo vectoriel : reste net sur tous les écrans -->
-        <a routerLink="/" class="logo" aria-label="Carthage Table, accueil">
-          <svg class="logo-symbol" viewBox="0 0 40 44" fill="none" aria-hidden="true">
-            <path d="M5 19L20 6l15 13M9 18v18m22-18v18M7 36h26M4 41h32M15 21v15m10-15v15M9 18h22" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-            <path d="M16 3h8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
-          </svg>
-          <span class="logo-wordmark">Carthage<span>Table.</span></span>
+        <!-- Logo Restora : emblème (cloche + R) et nom -->
+        <a routerLink="/" class="logo" aria-label="Restora, accueil">
+          <img class="logo-mark" src="img/restora-logo.png" alt="" />
+          <span class="logo-wordmark"><b>R</b>estora</span>
         </a>
 
         <nav class="nav-links" [class.mobile-open]="mobileOpen()" (click)="mobileOpen.set(false)" aria-label="Navigation principale">

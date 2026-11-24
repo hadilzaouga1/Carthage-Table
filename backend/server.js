@@ -9,6 +9,6 @@ const PORT = process.env.PORT || 5000;
 // On connecte d'abord la base, puis on démarre le serveur
 connectDB().then(() => {
   app.listen(PORT, () => {
-    console.log(`Serveur lancé sur http://localhost:${PORT}`);
+    console.log(`🚀 Serveur lancé sur http://localhost:${PORT}`);
   });
 });

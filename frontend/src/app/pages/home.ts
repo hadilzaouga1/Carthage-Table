@@ -1,16 +1,15 @@
-// Page d'accueil (design Lovable) : hero, bandeau, restaurants par cuisine, derniers avis, 3 étapes, appel aux restaurateurs.
+// Page d'accueil (design Lovable) : hero, bandeau, restaurants par cuisine, 3 étapes, appel aux restaurateurs.
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { DatePipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { RestaurantService, Restaurant } from '../core/restaurant.service';
-import { ReviewService, Review } from '../core/review.service';
+import { CuisineService } from '../core/cuisine.service';
 import { RestaurantCard } from '../shared/restaurant-card';
 import { Icon } from '../core/icon';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, DatePipe, RestaurantCard, Icon],
+  imports: [RouterLink, RestaurantCard, Icon],
   template: `
     <!-- HERO : le premier écran annonce la marque et le plaisir de manger -->
     <section class="hero">
@@ -19,6 +18,15 @@ import { Icon } from '../core/icon';
           <div class="location-tag"><app-icon name="map-pin"></app-icon>De nos cuisines à votre table · Tunis</div>
           <h1>La Tunisie<br />a <span class="highlight">bon goût.</span></h1>
           <p class="hero-description">Vos restaurants préférés. Des plats qui font envie.<br />Et tout le plaisir de bien manger, livré chez vous.</p>
+          <!-- Barre de recherche : envoie vers la liste des restaurants, déjà filtrée -->
+          <form class="hero-search" role="search" (submit)="search($event)">
+            <div class="search-box">
+              <app-icon name="search"></app-icon>
+              <input class="field" type="search" name="q" placeholder="Pizza, couscous, burger…" aria-label="Rechercher un restaurant"
+                     [value]="query()" (input)="query.set($any($event.target).value)" />
+            </div>
+            <button type="submit" class="btn-tomato">Rechercher</button>
+          </form>
           <div class="hero-buttons">
             <a routerLink="/restaurants" class="btn-tomato">J’ai faim, je commande <app-icon name="arrow-right"></app-icon></a>
             <a href="#comment-ca-marche" class="btn-soft">Comment ça marche ?</a>
@@ -59,7 +67,7 @@ import { Icon } from '../core/icon';
         <a routerLink="/restaurants" class="text-link">Tous les restaurants <app-icon name="arrow-right"></app-icon></a>
       </div>
       <div class="cuisine-row">
-        @for (c of cuisines; track c.name) {
+        @for (c of cuisines(); track c.name) {
           <button type="button" class="btn-ghost cuisine-button" [class.selected]="cuisine() === c.name" (click)="choose(c.name)">
             <app-icon [name]="c.icon"></app-icon>{{ c.label }}
           </button>
@@ -69,38 +77,6 @@ import { Icon } from '../core/icon';
         @for (r of restaurants(); track r._id) { <app-restaurant-card [r]="r" /> }
       </div>
       @if (!restaurants().length) { <p class="results-count">Aucun restaurant pour cette cuisine pour le moment.</p> }
-    </div></section>
-
-    <!-- Section Avis Clients : jusqu'à 3 derniers avis affichés sans lien -->
-    <section class="section home-reviews"><div class="container">
-      <div class="section-heading">
-        <div>
-          <p class="eyebrow">ILS ONT GOÛTÉ, ILS RACONTENT.</p>
-          <h2>Les derniers avis<span class="text-primary">.</span></h2>
-        </div>
-      </div>
-
-      @if (!latestReviews().length) {
-        <p class="results-count">Aucun avis publié pour le moment. Soyez le premier à noter votre restaurant préféré !</p>
-      } @else {
-        <div class="home-reviews-grid">
-          @for (rev of latestReviews(); track rev._id) {
-            <article class="home-review-card">
-              <div class="home-review-top">
-                <span class="home-review-stars">{{ '★'.repeat(rev.note) }}{{ '☆'.repeat(5 - rev.note) }}</span>
-                <small>{{ rev.createdAt | date: 'dd/MM/yyyy' }}</small>
-              </div>
-              <p class="home-review-text">
-                {{ rev.commentaire ? '« ' + rev.commentaire + ' »' : 'Note attribuée : ' + rev.note + '/5' }}
-              </p>
-              <div class="home-review-foot">
-                <strong>{{ authorName(rev) }}</strong>
-                <span class="restaurant-label">{{ restaurantNameOf(rev) }}</span>
-              </div>
-            </article>
-          }
-        </div>
-      }
     </div></section>
 
     <!-- 3 étapes -->
@@ -122,69 +98,50 @@ import { Icon } from '../core/icon';
     </div>
   `,
   styles: [`
-    .home-reviews { padding-top: 12px; }
-    .home-reviews-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-    .home-review-card { padding: 18px 20px; border: 1px solid rgba(128,128,128,.28); border-radius: 18px; display: flex; flex-direction: column; justify-content: space-between; gap: 12px; }
-    .home-review-top { display: flex; justify-content: space-between; align-items: center; }
-    .home-review-stars { color: #f59f00; font-size: 1.05rem; letter-spacing: 1px; }
-    .home-review-text { margin: 0; line-height: 1.5; opacity: .9; }
-    .home-review-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid rgba(128,128,128,.2); font-size: .9rem; }
-    .restaurant-label { color: #e8590c; font-weight: 600; }
+    .hero-search { display: flex; gap: 10px; max-width: 520px; margin: 0 0 22px; }
+    .hero-search .btn-tomato { flex-shrink: 0; }
   `]
 })
 export class Home implements OnInit {
   private service = inject(RestaurantService);
-  private reviewService = inject(ReviewService);
+  private cuisineApi = inject(CuisineService);
+  private router = inject(Router);
 
   restaurants = signal<Restaurant[]>([]); // restaurants affichés
-  latestReviews = signal<Review[]>([]);     // jusqu'à 3 derniers avis clients
   cuisine = signal('Tous');               // cuisine sélectionnée
+  query = signal('');                     // texte de la barre de recherche
 
-  cuisines = [
-    { name: 'Tous', label: 'Tous', icon: 'utensils' }, { name: 'Pizza', label: 'Pizzas', icon: 'pizza' },
-    { name: 'Fast-food', label: 'Burgers', icon: 'sandwich' }, { name: 'Tunisien', label: 'Tunisien', icon: 'utensils' },
-    { name: 'Italien', label: 'Pâtes', icon: 'utensils' }, { name: 'Desserts', label: 'Desserts', icon: 'cake-slice' }
-  ];
+  // Les cuisines viennent de l'API (gérées par l'administrateur). « Tous » est toujours en premier.
+  cuisines = signal<{ name: string; label: string; icon: string }[]>([{ name: 'Tous', label: 'Tous', icon: 'utensils' }]);
   slogans = ['Bon appétit, بالشفاء !', 'Du frais. Du bon. Du local.', 'Votre prochaine envie est ici.', 'La Tunisie à votre table.'];
   steps = [
     { icon: 'search', title: 'Trouvez votre bonheur', text: 'Une envie de pizza, de burger ou de saveurs du pays ? Choisissez votre restaurant.' },
     { icon: 'shopping-bag', title: 'Composez votre festin', text: 'Vos plats préférés, quelques clics et une adresse. On s’occupe de la suite.' },
     { icon: 'bike', title: 'Savourez, tout simplement', text: 'Votre repas arrive à votre porte. Payez à la livraison et régalez-vous.' }
   ];
-
   ngOnInit() {
+    this.cuisineApi.list().subscribe((list) =>
+      this.cuisines.set([{ name: 'Tous', label: 'Tous', icon: 'utensils' }, ...list.map((c) => ({ name: c.nom, label: c.nom, icon: c.icon || 'utensils' }))])
+    );
     this.load();
-    this.loadLatestReviews();
   }
 
+  // Recherche depuis l'accueil : on ouvre la liste des restaurants avec le texte saisi
+  search(event: Event) {
+    event.preventDefault();
+    const text = this.query().trim();
+    this.router.navigate(['/restaurants'], { queryParams: text ? { search: text } : {} });
+  }
+
+  // Choisir une cuisine puis recharger la liste
   choose(name: string) { this.cuisine.set(name); this.load(); }
 
-  authorName(rev: Review): string {
-    if (rev.client && typeof rev.client === 'object') {
-      return `${rev.client.prenom || ''} ${rev.client.nom || ''}`.trim() || 'Client';
-    }
-    return 'Client';
-  }
-
-  restaurantNameOf(rev: Review): string {
-    if (rev.restaurant && typeof rev.restaurant === 'object') {
-      return rev.restaurant.nom || '';
-    }
-    return '';
-  }
-
+  // Appel API : 3 restaurants maximum sur l'accueil
   private load() {
     const typeCuisine = this.cuisine() === 'Tous' ? undefined : this.cuisine();
     this.service.list({ typeCuisine, limit: 6 }).subscribe({
       next: res => this.restaurants.set(res.restaurants),
       error: () => this.restaurants.set([])
-    });
-  }
-
-  private loadLatestReviews() {
-    this.reviewService.latest(3).subscribe({
-      next: res => this.latestReviews.set(res.reviews || []),
-      error: () => this.latestReviews.set([])
     });
   }
 }

@@ -36,7 +36,7 @@ import { AuthService } from '../core/auth.service';
         </div>
 
         <div class="promo-box">
-          <label for="promo-input">Code promo (ex. CARTHAGE10, BIENVENUE)</label>
+          <label for="promo-input">Code promo (ex. RESTORA10, BIENVENUE)</label>
           <div class="promo-row">
             <input
               id="promo-input"
@@ -70,10 +70,17 @@ import { AuthService } from '../core/auth.service';
 
         <div class="form">
           <label>Adresse de livraison *</label>
-          <input type="text" placeholder="Ex : 12 rue de Carthage, Tunis" [value]="adresse()" (input)="adresse.set($any($event.target).value)" />
+          <input type="text" placeholder="Ex : 12 rue de Marseille, Tunis" [value]="adresse()" (input)="adresse.set($any($event.target).value)" />
           <label>Remarque (facultatif)</label>
           <input type="text" placeholder="Ex : sans oignons" [value]="remarque()" (input)="remarque.set($any($event.target).value)" />
         </div>
+
+        <!-- Mode de paiement (étape 4 de la commande). Le paiement en ligne est une extension facultative. -->
+        <fieldset class="form pay">
+          <legend>Mode de paiement</legend>
+          <label class="check-label pay-option"><input type="radio" name="paiement" checked /> Paiement à la livraison</label>
+          <label class="check-label pay-option off"><input type="radio" name="paiement" disabled /> Paiement en ligne <small>(bientôt disponible)</small></label>
+        </fieldset>
 
         @if (error()) { <p class="error">{{ error() }}</p> }
 
@@ -100,6 +107,10 @@ import { AuthService } from '../core/auth.service';
     .form { display: grid; gap: 8px; max-width: 520px; margin-bottom: 16px; }
     .form input { padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
     .error { color: #e5484d; font-weight: 600; margin: 0; }
+    .pay { border: 0; padding: 0; margin: 0 0 16px; }
+    .pay legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
+    .pay-option { padding: 10px 14px; border: 1px solid rgba(128,128,128,.4); border-radius: 12px; }
+    .pay-option.off { opacity: .55; }
   `]
 })
 export class Cart {

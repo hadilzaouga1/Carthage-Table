@@ -4,8 +4,8 @@ import User from '../models/User.js';
 
 // Comptes de test pour l'application (relançable : un compte existant n'est jamais recréé)
 const users = [
-  { nom: 'Admin', prenom: 'Super', email: 'admin@carthage-table.tn', telephone: '20000000', password: 'Admin1234', role: 'admin' },
-  { nom: 'Ben Salah', prenom: 'Karim', email: 'resto@carthage-table.tn', telephone: '21000000', password: 'Resto1234', role: 'restaurateur' }
+  { nom: 'Admin', prenom: 'Super', email: 'admin@restora.tn', telephone: '20000000', password: 'Admin1234', role: 'admin' },
+  { nom: 'Ben Salah', prenom: 'Karim', email: 'resto@restora.tn', telephone: '21000000', password: 'Resto1234', role: 'restaurateur' }
 ];
 
 async function run() {

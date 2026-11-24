@@ -1,10 +1,10 @@
-/* ===== Carthage Table : feuille de style globale (portée depuis Lovable, sans Tailwind ni Bootstrap) ===== */
+/* ===== Restora : feuille de style globale (portée depuis Lovable, sans Tailwind ni Bootstrap) ===== */
 @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Poppins:wght@400;500;600;700&display=swap');
 :root{--font-sans:'Poppins',sans-serif;--font-display:'Alfa Slab One',Georgia,serif;--radius-md:.75rem;--radius-lg:1rem}
 :root, html[data-bs-theme="light"] {
   --background: oklch(.973 .025 81);
   --foreground: oklch(.205 .02 40);
-  --primary: oklch(.625 .213 35);
+  --primary: oklch(.64 .205 43); /* orange du logo Restora */
   --primary-foreground: oklch(1 0 0);
   --gold: oklch(.813 .169 80);
   --gold-foreground: oklch(.205 .02 40);
@@ -53,9 +53,9 @@ img { max-width: 100%; display: block; }
 .site-header { border-bottom: 1px solid var(--border); height: 91px; position: relative; z-index: 20; }
 .header-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
 .logo { color: var(--primary); display: flex; gap: 10px; align-items: center; }
-.logo-symbol { width: 38px; height: 42px; }
-.logo-wordmark { font-family: var(--font-display); font-size: 20px; line-height: 1.15; }
-.logo-wordmark span { display: block; }
+.logo-mark { height: 40px; width: auto; display: block; }
+.logo-wordmark { font-family: var(--font-display); font-size: 24px; line-height: 1; color: var(--foreground); letter-spacing: .5px; }
+.logo-wordmark b { color: var(--primary); font-weight: inherit; }
 .nav-links { display: flex; gap: 30px; align-items: center; font-size: 13px; font-weight: 500; }
 .nav-link { padding: 8px 0; position: relative; }
 .header-actions { display: flex; align-items: center; gap: 12px; }
@@ -252,8 +252,8 @@ input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; 
 @media (max-width: 760px) {
   .container { width: calc(100% - 36px); }
   .site-header { height: 75px; }
-  .logo-wordmark { font-size: 17px; }
-  .logo-symbol { width: 30px; }
+  .logo-wordmark { font-size: 20px; }
+  .logo-mark { height: 32px; }
   .header-inner { gap: 12px; }
   .header-actions { gap: 6px; }
   .header-actions .icon-button { width: 36px; height: 36px; }
@@ -322,7 +322,7 @@ input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; 
   .stat-card strong { font-size: 23px; }
   .admin-row { flex-wrap: wrap; }
 }
-@media (max-width: 370px) { .hero h1 { font-size: 40px; } .logo-wordmark { font-size: 15px; } .header-actions { gap: 2px; } .hero-buttons { flex-wrap: wrap; } }
+@media (max-width: 370px) { .hero h1 { font-size: 40px; } .logo-wordmark { font-size: 17px; } .header-actions { gap: 2px; } .hero-buttons { flex-wrap: wrap; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
 
 /* ===== Ajouts pour Angular (remplacent les utilitaires Tailwind et les variantes du composant Button) ===== */

@@ -36,7 +36,7 @@ async function run() {
   await mongoose.connect(process.env.MONGO_URI);
 
   // On cherche le restaurateur créé par seedAdmin.js
-  const owner = await User.findOne({ email: 'resto@carthage-table.tn' });
+  const owner = await User.findOne({ email: 'resto@restora.tn' });
   if (!owner) {
     console.log(" Lance d'abord : npm run seed:admin");
     return mongoose.disconnect();

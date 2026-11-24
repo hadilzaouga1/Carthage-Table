@@ -11,9 +11,6 @@ const restaurantSchema = new mongoose.Schema(
     fraisLivraison: { type: Number, required: true, min: [0, 'Les frais ne peuvent pas être négatifs'], default: 0 },
     horaires: { type: String, default: '10:00 - 23:00' },
     isOpen: { type: Boolean, default: true }, // ouvert ou fermé
-    // Note moyenne calculée à partir des avis clients
-    noteMoyenne: { type: Number, default: 0, min: 0, max: 5 },
-    nombreAvis: { type: Number, default: 0, min: 0 },
     // L'admin peut valider ou suspendre un restaurant partenaire
     status: { type: String, enum: ['en_attente', 'valide', 'suspendu'], default: 'en_attente' },
     // owner = le compte du restaurateur (référence vers la collection users)
