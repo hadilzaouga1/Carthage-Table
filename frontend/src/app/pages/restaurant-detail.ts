@@ -19,6 +19,9 @@ import { CartService } from '../core/cart.service';
         <a routerLink="/restaurants" class="text-link">← Tous les restaurants</a>
 
         <div class="menu-head">
+          <div class="resto-banner">
+            <img [src]="restoPhoto(restaurant()!.image, restaurant()!.typeCuisine)" [alt]="restaurant()!.nom" />
+          </div>
           <h2>{{ restaurant()!.icon || '🍽️' }} {{ restaurant()!.nom }}</h2>
           <p>{{ restaurant()!.typeCuisine }} · {{ restaurant()!.adresse }}</p>
           <p>{{ restaurant()!.description }}</p>
@@ -61,6 +64,8 @@ import { CartService } from '../core/cart.service';
   `,
   styles: [`
     .menu-head { margin: 16px 0 24px; }
+    .resto-banner { width: 100%; height: 220px; border-radius: 18px; overflow: hidden; margin-bottom: 16px; }
+    .resto-banner img { width: 100%; height: 100%; object-fit: cover; }
     .notice { padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(220,60,60,.5); margin-bottom: 16px; }
     .cat-title { margin: 28px 0 12px; }
     .dish-list { display: grid; gap: 12px; }
@@ -100,6 +105,19 @@ export class RestaurantDetail implements OnInit {
 
   // Adresse de la photo d'un plat : lien complet (https://...) utilisé tel quel, sinon fichier du dossier public/img
   photo(image: string) { return /^(https?:)?\/\//.test(image) ? image : `img/${image}`; }
+
+  // Bannière et photo du restaurant selon image et type de cuisine
+  restoPhoto(image?: string, cuisine?: string) {
+    if (image) return /^(https?:)?\/\//.test(image) ? image : `img/${image}`;
+    const t = (cuisine || '').toLowerCase();
+    if (t.includes('burger') || t.includes('fast-food') || t.includes('américain')) return 'img/burger.jpg';
+    if (t.includes('tunisien') || t.includes('oriental') || t.includes('traditionnel')) return 'img/chez-mami.jpg';
+    if (t.includes('dessert') || t.includes('pâtisserie') || t.includes('sucré')) return 'img/dessert.jpg';
+    if (t.includes('salade') || t.includes('healthy') || t.includes('végétarien')) return 'img/salade.jpg';
+    if (t.includes('italien') || t.includes('pâtes') || t.includes('pasta')) return 'https://images.unsplash.com/photo-1621996346565-e3d5d6281292?w=800';
+    if (t.includes('boisson') || t.includes('jus') || t.includes('café')) return 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=800';
+    return 'img/pizza-house.jpg';
+  }
 
   // Les plats d'une catégorie
   dishesOf(categoryId: string) { return this.dishes().filter((d) => d.categorie === categoryId); }
