@@ -3,6 +3,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantService, Restaurant, Category, Dish } from '../core/restaurant.service';
 import { CartService } from '../core/cart.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-restaurant-detail',
@@ -44,7 +45,9 @@ import { CartService } from '../core/cart.service';
                 <div class="dish-info"><strong>{{ d.nom }}</strong><p>{{ d.description }}</p></div>
                 <div class="dish-side">
                   <span class="price">{{ d.prix.toFixed(2) }} DT</span>
-                  @if (d.disponible && restaurant()!.isOpen) {
+                  @if (auth.role() === 'admin') {
+                    <span class="admin-view-tag">Mode consultation</span>
+                  } @else if (d.disponible && restaurant()!.isOpen) {
                     <button type="button" class="btn-tomato" (click)="add(d)">Ajouter</button>
                   } @else {
                     <span class="unavailable">Indisponible</span>
@@ -55,8 +58,8 @@ import { CartService } from '../core/cart.service';
           </div>
         }
 
-        <!-- Barre du panier, visible dès qu'il y a un plat -->
-        @if (cart.count() > 0) {
+        <!-- Barre du panier, visible dès qu'il y a un plat (masquée pour l'admin) -->
+        @if (cart.count() > 0 && auth.role() !== 'admin') {
           <a routerLink="/panier" class="btn-tomato cart-bar">Voir mon panier ({{ cart.count() }}) · {{ cart.sousTotal().toFixed(2) }} DT</a>
         }
       }
@@ -77,6 +80,7 @@ import { CartService } from '../core/cart.service';
     .dish-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
     .price { font-weight: 700; }
     .unavailable { opacity: .6; font-size: .9rem; }
+    .admin-view-tag { padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; opacity: .7; border: 1px dashed rgba(128,128,128,.5); }
     .cart-bar { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; box-shadow: 0 6px 24px rgba(0,0,0,.3); }
   `]
 })
@@ -84,6 +88,7 @@ export class RestaurantDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private service = inject(RestaurantService);
   cart = inject(CartService);
+  auth = inject(AuthService);
 
   loading = signal(true);
   restaurant = signal<Restaurant | null>(null);
