@@ -1,4 +1,4 @@
-// Service de l'administrateur : statistiques, restaurants (création, validation), utilisateurs.
+// Service de l'administrateur : statistiques, restaurants (création, validation), utilisateurs, commandes du jour.
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs';
@@ -11,6 +11,37 @@ export interface AdminRestaurant {
 }
 export interface UserPage { users: AdminUser[]; total: number; page: number; pages: number; }
 export interface AdminUser { _id?: string; id?: string; nom: string; prenom: string; email: string; role: string; isActive?: boolean; }
+
+export interface AdminOrderArticle {
+  plat: string;
+  nom: string;
+  quantite: number;
+  prixUnitaire: number;
+}
+
+export interface AdminTodayOrder {
+  _id: string;
+  client?: { nom: string; prenom: string; telephone?: string; email?: string };
+  restaurant?: { nom: string; adresse?: string; telephone?: string };
+  articles: AdminOrderArticle[];
+  sousTotal: number;
+  total: number;
+  fraisLivraison: number;
+  statut: string;
+  adresseLivraison: string;
+  modePaiement?: string;
+  remarque?: string;
+  codePromo?: string;
+  remise?: number;
+  createdAt: string;
+}
+
+export interface TodayOrdersResponse {
+  orders: AdminTodayOrder[];
+  totalCommandes: number;
+  chiffreAffairesJour: number;
+  totalJour: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -53,4 +84,9 @@ export class AdminService {
   }
   setActive(id: string, isActive: boolean) { return this.http.put(`${API_URL}/users/${id}/status`, { isActive }); }
   setRole(id: string, role: string) { return this.http.put(`${API_URL}/users/${id}/role`, { role }); }
+
+  // Commandes du jour pour l'administrateur
+  todayOrders() {
+    return this.http.get<any>(`${API_URL}/admin/orders/today`).pipe(map((r) => r.data as TodayOrdersResponse));
+  }
 }
