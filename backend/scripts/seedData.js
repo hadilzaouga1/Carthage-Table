@@ -24,7 +24,7 @@ const data = [
     }
   },
   {
-    resto: { nom: 'Burger Station', description: 'Burgers faits maison', adresse: 'Rue de la République', typeCuisine: 'Fast-food', image: 'burger-station.jpg', fraisLivraison: 6, horaires: '12:00 - 00:00', isOpen: false },
+    resto: { nom: 'Burger Station', description: 'Burgers faits maison', adresse: 'Rue de la République', typeCuisine: 'Fast-food', image: 'burger.jpg', fraisLivraison: 6, horaires: '12:00 - 00:00', isOpen: false },
     menu: {
       Sandwichs: [['Cheese Burger', 'Steak, cheddar, salade', 12], ['Chicken Burger', 'Poulet pané, sauce maison', 11]],
       Boissons: [['Fanta', 'Canette 33cl', 3]]

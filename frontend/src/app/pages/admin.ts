@@ -1,11 +1,13 @@
-// Page Administration : statistiques, restaurants (créer, modifier, supprimer, valider), cuisines, utilisateurs.
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { AdminService, AdminStats, AdminRestaurant, AdminUser } from '../core/admin.service';
+// Page Administration : statistiques, restaurants (créer, modifier, supprimer, valider), cuisines, utilisateurs, commandes du jour.
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { DatePipe } from '@angular/common';
+import { AdminService, AdminStats, AdminRestaurant, AdminUser, AdminTodayOrder } from '../core/admin.service';
 import { CuisineService, Cuisine } from '../core/cuisine.service';
 
 @Component({
   selector: 'app-admin',
   standalone: true,
+  imports: [DatePipe],
   template: `
     <section class="section"><div class="container">
       <h2>Administration<span class="text-primary">.</span></h2>
@@ -27,6 +29,9 @@ import { CuisineService, Cuisine } from '../core/cuisine.service';
         <button type="button" class="btn-ghost" [class.selected]="tab() === 'restaurants'" (click)="tab.set('restaurants')">Restaurants</button>
         <button type="button" class="btn-ghost" [class.selected]="tab() === 'cuisines'" (click)="tab.set('cuisines')">Cuisines</button>
         <button type="button" class="btn-ghost" [class.selected]="tab() === 'users'" (click)="tab.set('users')">Utilisateurs</button>
+        <button type="button" class="btn-ghost" [class.selected]="tab() === 'commandes'" (click)="tab.set('commandes')">
+          Commandes du jour @if (todayOrders().length) { <span class="tab-badge">{{ todayOrders().length }}</span> }
+        </button>
       </div>
 
       <!-- ===================== RESTAURANTS ===================== -->
@@ -147,6 +152,62 @@ import { CuisineService, Cuisine } from '../core/cuisine.service';
           </div>
         }
       }
+
+      <!-- ===================== COMMANDES DU JOUR ===================== -->
+      @if (tab() === 'commandes') {
+        <div class="today-head">
+          <div class="today-summary">
+            <div class="stat"><small>Commandes aujourd'hui</small><strong>{{ todayOrders().length }}</strong></div>
+            <div class="stat"><small>Chiffre d'affaires livré (jour)</small><strong>{{ (todayOrdersStats()?.ca ?? 0).toFixed(2) }} DT</strong></div>
+          </div>
+          <button type="button" class="btn-ghost refresh-btn" (click)="loadTodayOrders()">↻ Actualiser</button>
+        </div>
+
+        <div class="tabs">
+          <button type="button" class="btn-ghost" [class.selected]="orderStatusFilter() === ''" (click)="orderStatusFilter.set('')">Toutes ({{ todayOrders().length }})</button>
+          <button type="button" class="btn-ghost" [class.selected]="orderStatusFilter() === 'en_attente'" (click)="orderStatusFilter.set('en_attente')">En attente</button>
+          <button type="button" class="btn-ghost" [class.selected]="orderStatusFilter() === 'acceptee'" (click)="orderStatusFilter.set('acceptee')">Acceptées</button>
+          <button type="button" class="btn-ghost" [class.selected]="orderStatusFilter() === 'en_preparation'" (click)="orderStatusFilter.set('en_preparation')">En préparation</button>
+          <button type="button" class="btn-ghost" [class.selected]="orderStatusFilter() === 'en_livraison'" (click)="orderStatusFilter.set('en_livraison')">En livraison</button>
+          <button type="button" class="btn-ghost" [class.selected]="orderStatusFilter() === 'livree'" (click)="orderStatusFilter.set('livree')">Livrées</button>
+          <button type="button" class="btn-ghost" [class.selected]="orderStatusFilter() === 'annulee'" (click)="orderStatusFilter.set('annulee')">Annulées</button>
+        </div>
+
+        @for (o of filteredTodayOrders(); track o._id) {
+          <article class="order-item">
+            <div class="order-top">
+              <div>
+                <strong>{{ o.restaurant?.nom || 'Restaurant' }}</strong>
+                <span class="order-time">{{ o.createdAt | date: 'HH:mm' }}</span>
+              </div>
+              <span class="badge" [attr.data-s]="o.statut">{{ orderStatusLabel(o.statut) }}</span>
+            </div>
+
+            <div class="order-details">
+              <small>Client : <strong>{{ o.client?.prenom }} {{ o.client?.nom }}</strong> · Tél : {{ o.client?.telephone || 'Non renseigné' }}</small>
+              <small>Adresse : {{ o.adresseLivraison }}</small>
+            </div>
+
+            <div class="order-dishes">
+              @for (a of o.articles; track a.plat) {
+                <span class="dish-pill">{{ a.quantite }}× {{ a.nom }} ({{ (a.quantite * a.prixUnitaire).toFixed(2) }} DT)</span>
+              }
+            </div>
+
+            <div class="order-bottom">
+              @if ((o.remise ?? 0) > 0) {
+                <small class="discount-pill">Remise ({{ o.codePromo || 'PROMO' }}) : -{{ (o.remise ?? 0).toFixed(2) }} DT</small>
+              }
+              <span>Frais : {{ o.fraisLivraison.toFixed(2) }} DT</span>
+              <strong class="order-total">Total : {{ o.total.toFixed(2) }} DT</strong>
+            </div>
+          </article>
+        }
+
+        @if (!filteredTodayOrders().length) {
+          <p class="hint">Aucune commande enregistrée aujourd'hui pour ce filtre.</p>
+        }
+      }
     </div></section>
   `,
   styles: [`
@@ -154,6 +215,7 @@ import { CuisineService, Cuisine } from '../core/cuisine.service';
     .stat { padding: 14px 16px; border: 1px solid rgba(128,128,128,.3); border-radius: 16px; display: grid; gap: 4px; }
     .stat strong { font-size: 1.4rem; }
     .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+    .tab-badge { background: #e8590c; color: #fff; padding: 2px 7px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; margin-left: 4px; }
     .form { display: grid; gap: 10px; max-width: 520px; margin: 16px 0; }
     .form.edit { padding: 14px 16px; border: 1px dashed rgba(128,128,128,.5); border-radius: 14px; max-width: none; }
     .row { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -165,12 +227,29 @@ import { CuisineService, Cuisine } from '../core/cuisine.service';
     .info { flex: 1; min-width: 180px; display: grid; }
     .badge { padding: 4px 12px; border-radius: 999px; font-size: .85rem; font-weight: 700; border: 1px solid rgba(128,128,128,.4); }
     .badge[data-s="en_attente"] { background: #f5a623; color: #000; }
-    .badge[data-s="valide"] { background: #2e9e5b; color: #fff; }
-    .badge[data-s="suspendu"] { background: #e5484d; color: #fff; }
+    .badge[data-s="acceptee"] { background: #339af0; color: #fff; }
+    .badge[data-s="en_preparation"] { background: #fd7e14; color: #fff; }
+    .badge[data-s="en_livraison"] { background: #845ef7; color: #fff; }
+    .badge[data-s="valide"], .badge[data-s="livree"] { background: #2e9e5b; color: #fff; }
+    .badge[data-s="suspendu"], .badge[data-s="annulee"] { background: #e5484d; color: #fff; }
     select { padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(128,128,128,.4); background: transparent; color: inherit; font: inherit; }
     .page-info { align-self: center; }
     .error { color: #e5484d; font-weight: 600; }
     .success { color: #2e9e5b; font-weight: 600; }
+
+    /* Commandes du jour */
+    .today-head { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0; }
+    .today-summary { display: flex; flex-wrap: wrap; gap: 12px; }
+    .refresh-btn { align-self: center; }
+    .order-item { padding: 16px 18px; margin: 12px 0; border: 1px solid rgba(128,128,128,.3); border-radius: 16px; display: grid; gap: 10px; }
+    .order-top { display: flex; justify-content: space-between; align-items: center; }
+    .order-time { margin-left: 10px; opacity: .7; font-size: 0.9rem; }
+    .order-details { display: grid; gap: 2px; }
+    .order-dishes { display: flex; flex-wrap: wrap; gap: 6px; }
+    .dish-pill { background: rgba(128,128,128,.15); padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; }
+    .order-bottom { display: flex; justify-content: flex-end; align-items: center; gap: 14px; border-top: 1px solid rgba(128,128,128,.15); padding-top: 8px; }
+    .discount-pill { color: #2f9e44; font-weight: 600; }
+    .order-total { font-size: 1.15rem; color: #e8590c; }
   `]
 })
 export class Admin implements OnInit {
@@ -182,10 +261,21 @@ export class Admin implements OnInit {
   restaurateurs = signal<AdminUser[]>([]);
   cuisines = signal<Cuisine[]>([]);
   cuisineNames = signal<string[]>([]);
-  tab = signal<'restaurants' | 'cuisines' | 'users'>('restaurants');
+  tab = signal<'restaurants' | 'cuisines' | 'users' | 'commandes'>('restaurants');
   filter = signal('');
   error = signal('');
   success = signal('');
+
+  // Commandes du jour
+  todayOrders = signal<AdminTodayOrder[]>([]);
+  todayOrdersStats = signal<{ ca: number; total: number } | null>(null);
+  orderStatusFilter = signal('');
+
+  filteredTodayOrders = computed(() => {
+    const s = this.orderStatusFilter();
+    if (!s) return this.todayOrders();
+    return this.todayOrders().filter((o) => o.statut === s);
+  });
 
   // Formulaire de création de restaurant
   showForm = signal(false);
@@ -225,6 +315,9 @@ export class Admin implements OnInit {
 
   uid(u: AdminUser) { return u._id || u.id || u.email; }
   statusLabel(s: string) { return ({ en_attente: 'à valider', valide: 'validé', suspendu: 'suspendu' } as Record<string, string>)[s] ?? s; }
+  orderStatusLabel(s: string) {
+    return ({ en_attente: 'En attente', acceptee: 'Acceptée', en_preparation: 'En préparation', en_livraison: 'En livraison', livree: 'Livrée', annulee: 'Annulée' } as Record<string, string>)[s] ?? s;
+  }
 
   // Cuisines proposées dans le formulaire de modification (+ la cuisine actuelle si elle n'est plus dans la liste)
   editCuisines() {
@@ -236,7 +329,18 @@ export class Admin implements OnInit {
     this.loadRestaurants();
     this.loadCuisines();
     this.loadUsers();
+    this.loadTodayOrders();
     this.api.restaurateurs().subscribe({ next: (u) => this.restaurateurs.set(u), error: this.fail });
+  }
+
+  loadTodayOrders() {
+    this.api.todayOrders().subscribe({
+      next: (res) => {
+        this.todayOrders.set(res.orders);
+        this.todayOrdersStats.set({ ca: res.chiffreAffairesJour, total: res.totalJour });
+      },
+      error: this.fail
+    });
   }
 
   private loadRestaurants() {

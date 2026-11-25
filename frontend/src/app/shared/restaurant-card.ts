@@ -50,11 +50,23 @@ export class RestaurantCard {
   r = input.required<Restaurant>();  // le restaurant à afficher (donné par le parent)
   failed = signal(false);            // true si la photo du restaurant est introuvable
 
-  // Adresse de la photo : photo par défaut si absente ou introuvable,
+  // Photos de secours thématiques selon le type de cuisine pour éviter d'avoir la même image partout
+  private fallbackByCuisine(type: string): string {
+    const t = (type || '').toLowerCase();
+    if (t.includes('burger') || t.includes('fast-food') || t.includes('américain')) return 'img/burger.jpg';
+    if (t.includes('tunisien') || t.includes('oriental') || t.includes('traditionnel')) return 'img/chez-mami.jpg';
+    if (t.includes('dessert') || t.includes('pâtisserie') || t.includes('sucré')) return 'img/dessert.jpg';
+    if (t.includes('salade') || t.includes('healthy') || t.includes('végétarien')) return 'img/salade.jpg';
+    if (t.includes('italien') || t.includes('pâtes') || t.includes('pasta')) return 'https://images.unsplash.com/photo-1621996346565-e3d5d6281292?w=800';
+    if (t.includes('boisson') || t.includes('jus') || t.includes('café')) return 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=800';
+    return 'img/pizza-house.jpg';
+  }
+
+  // Adresse de la photo : photo par défaut adaptée si absente ou introuvable,
   // lien complet (https://...) utilisé tel quel, sinon fichier du dossier public/img
   src = computed(() => {
     const image = this.r().image;
-    if (this.failed() || !image) return 'img/pizzeria.jpg';
+    if (this.failed() || !image) return this.fallbackByCuisine(this.r().typeCuisine);
     return /^(https?:)?\/\//.test(image) ? image : `img/${image}`;
   });
 

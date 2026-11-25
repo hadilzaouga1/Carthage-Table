@@ -3,6 +3,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantService, Restaurant, Category, Dish } from '../core/restaurant.service';
 import { CartService } from '../core/cart.service';
+import { AuthService } from '../core/auth.service';
 
 @Component({
   selector: 'app-restaurant-detail',
@@ -19,6 +20,9 @@ import { CartService } from '../core/cart.service';
         <a routerLink="/restaurants" class="text-link">← Tous les restaurants</a>
 
         <div class="menu-head">
+          <div class="resto-banner">
+            <img [src]="restoPhoto(restaurant()!.image, restaurant()!.typeCuisine)" [alt]="restaurant()!.nom" />
+          </div>
           <h2>{{ restaurant()!.icon || '🍽️' }} {{ restaurant()!.nom }}</h2>
           <p>{{ restaurant()!.typeCuisine }} · {{ restaurant()!.adresse }}</p>
           <p>{{ restaurant()!.description }}</p>
@@ -41,7 +45,9 @@ import { CartService } from '../core/cart.service';
                 <div class="dish-info"><strong>{{ d.nom }}</strong><p>{{ d.description }}</p></div>
                 <div class="dish-side">
                   <span class="price">{{ d.prix.toFixed(2) }} DT</span>
-                  @if (d.disponible && restaurant()!.isOpen) {
+                  @if (auth.role() === 'admin') {
+                    <span class="admin-view-tag">Mode consultation</span>
+                  } @else if (d.disponible && restaurant()!.isOpen) {
                     <button type="button" class="btn-tomato" (click)="add(d)">Ajouter</button>
                   } @else {
                     <span class="unavailable">Indisponible</span>
@@ -52,8 +58,8 @@ import { CartService } from '../core/cart.service';
           </div>
         }
 
-        <!-- Barre du panier, visible dès qu'il y a un plat -->
-        @if (cart.count() > 0) {
+        <!-- Barre du panier, visible dès qu'il y a un plat (masquée pour l'admin) -->
+        @if (cart.count() > 0 && auth.role() !== 'admin') {
           <a routerLink="/panier" class="btn-tomato cart-bar">Voir mon panier ({{ cart.count() }}) · {{ cart.sousTotal().toFixed(2) }} DT</a>
         }
       }
@@ -61,6 +67,8 @@ import { CartService } from '../core/cart.service';
   `,
   styles: [`
     .menu-head { margin: 16px 0 24px; }
+    .resto-banner { width: 100%; height: 220px; border-radius: 18px; overflow: hidden; margin-bottom: 16px; }
+    .resto-banner img { width: 100%; height: 100%; object-fit: cover; }
     .notice { padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(220,60,60,.5); margin-bottom: 16px; }
     .cat-title { margin: 28px 0 12px; }
     .dish-list { display: grid; gap: 12px; }
@@ -72,6 +80,7 @@ import { CartService } from '../core/cart.service';
     .dish-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
     .price { font-weight: 700; }
     .unavailable { opacity: .6; font-size: .9rem; }
+    .admin-view-tag { padding: 4px 10px; border-radius: 999px; font-size: 0.8rem; opacity: .7; border: 1px dashed rgba(128,128,128,.5); }
     .cart-bar { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 50; box-shadow: 0 6px 24px rgba(0,0,0,.3); }
   `]
 })
@@ -79,6 +88,7 @@ export class RestaurantDetail implements OnInit {
   private route = inject(ActivatedRoute);
   private service = inject(RestaurantService);
   cart = inject(CartService);
+  auth = inject(AuthService);
 
   loading = signal(true);
   restaurant = signal<Restaurant | null>(null);
@@ -100,6 +110,19 @@ export class RestaurantDetail implements OnInit {
 
   // Adresse de la photo d'un plat : lien complet (https://...) utilisé tel quel, sinon fichier du dossier public/img
   photo(image: string) { return /^(https?:)?\/\//.test(image) ? image : `img/${image}`; }
+
+  // Bannière et photo du restaurant selon image et type de cuisine
+  restoPhoto(image?: string, cuisine?: string) {
+    if (image) return /^(https?:)?\/\//.test(image) ? image : `img/${image}`;
+    const t = (cuisine || '').toLowerCase();
+    if (t.includes('burger') || t.includes('fast-food') || t.includes('américain')) return 'img/burger.jpg';
+    if (t.includes('tunisien') || t.includes('oriental') || t.includes('traditionnel')) return 'img/chez-mami.jpg';
+    if (t.includes('dessert') || t.includes('pâtisserie') || t.includes('sucré')) return 'img/dessert.jpg';
+    if (t.includes('salade') || t.includes('healthy') || t.includes('végétarien')) return 'img/salade.jpg';
+    if (t.includes('italien') || t.includes('pâtes') || t.includes('pasta')) return 'https://images.unsplash.com/photo-1621996346565-e3d5d6281292?w=800';
+    if (t.includes('boisson') || t.includes('jus') || t.includes('café')) return 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=800';
+    return 'img/pizza-house.jpg';
+  }
 
   // Les plats d'une catégorie
   dishesOf(categoryId: string) { return this.dishes().filter((d) => d.categorie === categoryId); }

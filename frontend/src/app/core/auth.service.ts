@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { tap } from 'rxjs';
 import { API_URL } from './config';
 import { AuthResponse, User } from './models';
+import { CartService } from './cart.service';
 
 // Noms des clés dans le localStorage du navigateur
 const TOKEN_KEY = 'ct_token';
@@ -14,6 +15,7 @@ const USER_KEY = 'ct_user';
 export class AuthService {
   private http = inject(HttpClient);   // pour appeler l'API
   private router = inject(Router);     // pour changer de page
+  private cart = inject(CartService);  // panier de commande
 
   // signal = une valeur qui prévient l'écran quand elle change
   // On relit le localStorage au démarrage : l'utilisateur reste connecté après F5
@@ -60,8 +62,9 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${API_URL}/auth/login`, { email, password }).pipe(tap((res) => this.save(res)));
   }
 
-  // Déconnexion : on efface tout et on retourne à l'accueil
+  // Déconnexion : on vide le panier, on efface les données de session et on retourne à l'accueil
   logout() {
+    this.cart.clear();
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
     this.token.set(null);

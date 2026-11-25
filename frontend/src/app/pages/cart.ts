@@ -84,9 +84,15 @@ import { AuthService } from '../core/auth.service';
 
         @if (error()) { <p class="error">{{ error() }}</p> }
 
-        <button type="button" class="btn-tomato" [disabled]="sending()" (click)="order()">
-          {{ auth.user() ? (sending() ? 'Envoi...' : 'Commander') : 'Se connecter pour commander' }}
-        </button>
+        @if (auth.role() === 'admin') {
+          <div class="admin-notice-box">
+            <strong>Compte Administrateur :</strong> Vous êtes connecté en tant qu'administrateur. Les administrateurs gèrent la plateforme et ne peuvent pas passer de commande.
+          </div>
+        } @else {
+          <button type="button" class="btn-tomato" [disabled]="sending()" (click)="order()">
+            {{ auth.user() ? (sending() ? 'Envoi...' : 'Commander') : 'Se connecter pour commander' }}
+          </button>
+        }
       }
     </div></section>
   `,
@@ -111,6 +117,7 @@ import { AuthService } from '../core/auth.service';
     .pay legend { font-weight: 600; margin-bottom: 8px; padding: 0; }
     .pay-option { padding: 10px 14px; border: 1px solid rgba(128,128,128,.4); border-radius: 12px; }
     .pay-option.off { opacity: .55; }
+    .admin-notice-box { padding: 14px 18px; border-radius: 12px; background: rgba(229,72,77,.1); border: 1px solid rgba(229,72,77,.4); color: #e5484d; font-weight: 500; margin: 16px 0; }
   `]
 })
 export class Cart {
@@ -135,6 +142,12 @@ export class Cart {
   }
 
   order() {
+    // Les administrateurs ne peuvent pas passer de commande
+    if (this.auth.role() === 'admin') {
+      this.error.set('Les administrateurs ne peuvent pas passer de commande.');
+      return;
+    }
+
     // Il faut être connecté pour commander
     if (!this.auth.user()) { this.router.navigate(['/login']); return; }
     if (!this.adresse().trim()) { this.error.set("L'adresse de livraison est obligatoire."); return; }
