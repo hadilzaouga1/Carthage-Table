@@ -21,6 +21,7 @@ import { Icon } from '../core/icon';
               <a routerLink="/restaurants">Nos restaurants</a>
               <a routerLink="/commandes">Mes commandes</a>
               <a routerLink="/register">Nous rejoindre</a>
+              <a routerLink="/comment-ca-marche">Comment ça marche</a>
             </div>
             <div>
               <h3>Nos partenaires</h3>
