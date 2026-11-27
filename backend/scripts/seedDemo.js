@@ -13,7 +13,7 @@ const DEMO = [
     menu: { Pizzas: [['Pizza Margherita', 'Tomate, mozzarella et basilic', 15, 'plats/pizza-margherita.jpg'], ['Pizza 4 fromages', 'Mozzarella, gorgonzola, parmesan, chèvre', 19, 'plats/pizza-4-fromages.jpg'], ['Pizza Thon', 'Tomate, thon, olives, câpres', 17, 'plats/pizza-thon.jpg']],
             Boissons: [['Coca-Cola', 'Canette 33 cl', 3, 'plats/booga.jpg'], ['Eau minérale', 'Bouteille 50 cl', 1.5, 'plats/eau-minerale.jpg']],
             Desserts: [['Tiramisu', 'Mascarpone et café, fait maison', 7, 'plats/tiramisu.jpg']] } },
-  { nom: 'Dar Ellil', typeCuisine: 'Tunisien', icon: '🥘', image: 'https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=800', adresse: 'Médina, Tunis', fraisLivraison: 4, horaires: '11:00 - 22:30', isOpen: true,
+  { nom: 'Dar Ellil', typeCuisine: 'Tunisien', icon: '🥘', image: 'img/plats/couscous.jpg', adresse: 'Médina, Tunis', fraisLivraison: 4, horaires: '11:00 - 22:30', isOpen: true,
     description: 'Cuisine tunisienne familiale, plats mijotés et épices de la médina.',
     menu: { Entrées: [['Brik à l\'œuf', 'Feuille de malsouka, thon, œuf, persil', 4.5, 'plats/brik.jpg'], ['Salade méchouia', 'Poivrons et tomates grillés, huile d\'olive', 6, 'plats/salade-mechouia.jpg']],
             'Plats principaux': [['Couscous à l\'agneau', 'Semoule fine, légumes, agneau', 22, 'plats/couscous.jpg'], ['Lablabi', 'Pois chiches, pain, harissa, œuf', 8, 'plats/lablabi.jpg']],
@@ -22,7 +22,7 @@ const DEMO = [
     description: 'Burgers smashés, frites maison et milkshakes.',
     menu: { Sandwichs: [['Cheeseburger', 'Steak, cheddar, oignons caramélisés', 14, 'plats/cheeseburger.jpg'], ['Chicken Crunch', 'Poulet croustillant, salade, sauce ranch', 13, 'plats/chicken-burger.jpg']],
             Boissons: [['Milkshake vanille', '40 cl', 7, 'plats/milkshake-vanille.jpg']] } },
-  { nom: 'Pasta Nonna', typeCuisine: 'Italien', icon: '🍝', image: 'https://images.unsplash.com/photo-1621996346565-e3d5d6281292?w=800', adresse: 'Les Berges du Lac', fraisLivraison: 6, horaires: '11:30 - 23:00', isOpen: false,
+  { nom: 'Pasta Nonna', typeCuisine: 'Italien', icon: '🍝', image: 'img/plats/spaghetti-bolognaise.jpg', adresse: 'Les Berges du Lac', fraisLivraison: 6, horaires: '11:30 - 23:00', isOpen: false,
     description: 'Pâtes fraîches et sauces mijotées comme chez la nonna.',
     menu: { 'Plats principaux': [['Spaghetti bolognaise', 'Sauce à la viande mijotée 4 h', 16, 'plats/spaghetti-bolognaise.jpg'], ['Lasagnes', 'Béchamel, bœuf, parmesan', 18, 'plats/lasagnes.jpg']],
             Desserts: [['Panna cotta', 'Coulis de fruits rouges', 6, 'plats/panna-cotta.jpg']] } },
@@ -30,7 +30,7 @@ const DEMO = [
     description: 'Pâtisseries orientales et gâteaux du jour.',
     menu: { Desserts: [['Baklawa', 'Pistaches et miel, 6 pièces', 12, 'plats/baklawa.jpg'], ['Millefeuille', 'Crème pâtissière vanille', 6, 'plats/millefeuille.jpg'], ['Assidat zgougou', 'Crème de pin d\'Alep', 5, 'plats/assidat-zgougou.jpg']],
             Boissons: [['Thé à la menthe', 'Avec pignons', 3, 'plats/the-menthe.jpg']] } },
-  { nom: 'Jus Médina', typeCuisine: 'Boissons', icon: '🥤', image: 'https://images.unsplash.com/photo-1622597467836-f3285f2131b8?w=800', adresse: 'Avenue Habib Bourguiba', fraisLivraison: 2, horaires: '08:00 - 20:00', isOpen: true,
+  { nom: 'Jus Médina', typeCuisine: 'Boissons', icon: '🥤', image: 'img/plats/jus-orange.jpg', adresse: 'Avenue Habib Bourguiba', fraisLivraison: 2, horaires: '08:00 - 20:00', isOpen: true,
     description: 'Jus pressés minute et cocktails de fruits.',
     menu: { Boissons: [['Jus d\'orange', 'Pressé minute, 40 cl', 5, 'plats/jus-orange.jpg'], ['Cocktail avocat', 'Avocat, lait, dattes', 8, 'plats/cocktail-avocat.jpg'], ['Citronnade menthe', 'Fraîche et peu sucrée', 4, 'plats/citronnade.jpg']] } },
   { nom: 'Chez Fatma', typeCuisine: 'Tunisien', icon: '🍲', image: 'img/chez-mami.jpg', adresse: 'El Menzah 6', fraisLivraison: 5, horaires: '12:00 - 16:00', isOpen: false,
@@ -50,8 +50,9 @@ const DEMO = [
     owner = await User.create({ nom: 'Ben Salah', prenom: 'Karim', email: 'resto@restora.tn', telephone: '22111222', password: 'Resto1234', role: 'restaurateur' });
   }
 
-  // Remplace uniquement les données appartenant au restaurateur de démo
-  const old = await Restaurant.find({ owner: owner._id }).select('_id');
+  // Remplace les données de démo (y compris d'anciens comptes seed carthage-table/foodexpress)
+  const demoOwners = await User.find({ email: { $in: ['resto@restora.tn', 'resto@carthage-table.tn', 'resto@foodexpress.tn'] } }).select('_id');
+  const old = await Restaurant.find({ owner: { $in: demoOwners.map((u) => u._id) } }).select('_id');
   const oldIds = old.map((r) => r._id);
   await Promise.all([Dish.deleteMany({ restaurant: { $in: oldIds } }), Category.deleteMany({ restaurant: { $in: oldIds } }), Restaurant.deleteMany({ _id: { $in: oldIds } })]);
 
