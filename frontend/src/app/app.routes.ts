@@ -12,6 +12,7 @@ import { Admin } from './pages/admin';
 import { Profile } from './pages/profile';
 import { Favorites } from './pages/favorites';
 import { authGuard, roleGuard } from './core/guards';
+import { HowItWorks } from './pages/how-it-works';
 
 export const routes: Routes = [
   { path: '', component: Home },
@@ -27,6 +28,7 @@ export const routes: Routes = [
   { path: 'admin', component: Admin, canActivate: [roleGuard('admin')] },
   { path: 'login', component: Login },
   { path: 'register', component: Register },
+  { path: 'comment-ca-marche', component: HowItWorks },
   // Cette route doit rester TOUJOURS en dernier : elle attrape toutes les URL inconnues
   { path: '**', redirectTo: '' }
 ];

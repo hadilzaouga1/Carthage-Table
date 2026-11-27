@@ -29,7 +29,7 @@ import { Icon } from '../core/icon';
           </form>
           <div class="hero-buttons">
             <a routerLink="/restaurants" class="btn-tomato">J’ai faim, je commande <app-icon name="arrow-right"></app-icon></a>
-            <a href="#comment-ca-marche" class="btn-soft">Comment ça marche ?</a>
+            <a routerLink="/comment-ca-marche" class="btn-soft">Comment ça marche ?</a>
           </div>
           <div class="social-proof">
             <div class="proof-rating">
