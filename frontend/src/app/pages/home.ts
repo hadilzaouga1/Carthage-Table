@@ -19,7 +19,7 @@ import { Icon } from '../core/icon';
           <p class="hero-description">Vos restaurants préférés. Des plats qui font envie.<br />Et tout le plaisir de bien manger, livré chez vous.</p>
           <div class="hero-buttons">
             <a routerLink="/restaurants" class="btn-tomato">J’ai faim, je commande <app-icon name="arrow-right"></app-icon></a>
-            <a href="#comment-ca-marche" class="btn-soft">Comment ça marche ?</a>
+            <a routerLink="/comment-ca-marche" class="btn-soft">Comment ça marche ?</a>
           </div>
           <div class="social-proof">
             <div class="proof-rating">
