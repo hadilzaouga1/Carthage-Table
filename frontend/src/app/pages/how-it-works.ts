@@ -19,14 +19,14 @@ type PromoChoice = 'none' | 'RESTORA10' | 'BIENVENUE';
 
     <!-- PARCOURS DE COMMANDE -->
     <section class="section"><div class="container">
-      <ol class="timeline">
+      <ol class="how-timeline">
         @for (s of steps; track s.title; let i = $index) {
-          <li class="timeline-item">
+          <li class="how-item">
             <div class="step-icon"><app-icon [name]="s.icon"></app-icon><span class="step-number">0{{ i + 1 }}</span></div>
-            <div class="timeline-body">
+            <div class="how-body">
               <h3>{{ s.title }}</h3>
               <p>{{ s.text }}</p>
-              @if (s.tag) { <span class="tag">{{ s.tag }}</span> }
+              @if (s.tag) { <span class="how-tag">{{ s.tag }}</span> }
             </div>
           </li>
         }
@@ -36,12 +36,12 @@ type PromoChoice = 'none' | 'RESTORA10' | 'BIENVENUE';
     <!-- SUIVI DE COMMANDE -->
     <section class="steps-section"><div class="container">
       <div class="steps-heading"><p class="eyebrow">SUIVEZ VOTRE COMMANDE</p><h2>Un statut à chaque étape.</h2></div>
-      <div class="status-row">
+      <div class="how-status-row">
         @for (st of statuses; track st.label; let i = $index) {
-          <div class="status"><span class="status-dot">{{ i + 1 }}</span><strong>{{ st.label }}</strong><small>{{ st.text }}</small></div>
+          <div class="how-status"><span class="how-status-dot">{{ i + 1 }}</span><strong>{{ st.label }}</strong><small>{{ st.text }}</small></div>
         }
       </div>
-      <p class="status-note">Vous pouvez annuler votre commande tant qu’elle est « en attente ». Une fois acceptée par le restaurant, elle ne peut plus l’être.</p>
+      <p class="how-status-note">Vous pouvez annuler votre commande tant qu’elle est « en attente ». Une fois acceptée par le restaurant, elle ne peut plus l’être.</p>
     </div></section>
 
     <!-- CALCUL DU PRIX -->
@@ -87,20 +87,20 @@ type PromoChoice = 'none' | 'RESTORA10' | 'BIENVENUE';
     .how-hero h1 { font-family: var(--font-display); font-weight: 400; font-size: 46px; line-height: 1.15; }
     .how-intro { margin-top: 14px; max-width: 560px; color: var(--muted-foreground); line-height: 1.8; }
 
-    .timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; max-width: 760px; }
-    .timeline-item { display: flex; gap: 24px; padding-bottom: 34px; position: relative; }
-    .timeline-item:not(:last-child)::before { content: ''; position: absolute; left: 30px; top: 66px; bottom: 4px; width: 2px; background: rgba(128,128,128,.3); }
-    .timeline-item .step-icon { flex-shrink: 0; margin: 0; }
+    .how-timeline { list-style: none; margin: 0; padding: 0; display: block; max-width: 760px; }
+    .how-item { display: flex; align-items: flex-start; gap: 24px; padding-bottom: 34px; position: relative; }
+    .how-item:not(:last-child)::before { content: ''; position: absolute; left: 30px; top: 66px; bottom: 4px; width: 2px; background: rgba(128,128,128,.3); }
+    .how-item .step-icon { flex-shrink: 0; margin: 0; }
     .step-number { border-color: var(--background); }
-    .timeline-body h3 { font-size: 18px; font-weight: 700; margin: 6px 0 8px; }
-    .timeline-body p { color: var(--muted-foreground); line-height: 1.8; margin: 0; }
-    .tag { display: inline-block; margin-top: 10px; padding: 4px 12px; border-radius: 999px; background: var(--secondary); font-size: 12px; font-weight: 600; }
+    .how-body h3 { font-size: 18px; font-weight: 700; margin: 6px 0 8px; }
+    .how-body p { color: var(--muted-foreground); line-height: 1.8; margin: 0; }
+    .how-tag { display: inline-block; margin-top: 10px; padding: 4px 12px; border-radius: 999px; background: var(--secondary); font-size: 12px; font-weight: 600; }
 
-    .status-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; text-align: center; }
-    .status { display: grid; gap: 6px; justify-items: center; }
-    .status-dot { width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; font-weight: 700; }
-    .status small { color: var(--muted-foreground); line-height: 1.6; }
-    .status-note { text-align: center; margin: 28px auto 0; max-width: 560px; color: var(--muted-foreground); font-size: 13px; }
+    .how-status-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; text-align: center; }
+    .how-status { display: grid; gap: 6px; justify-items: center; }
+    .how-status-dot { width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: var(--primary-foreground); display: grid; place-items: center; font-weight: 700; }
+    .how-status small { color: var(--muted-foreground); line-height: 1.6; }
+    .how-status-note { text-align: center; margin: 28px auto 0; max-width: 560px; color: var(--muted-foreground); font-size: 13px; }
 
     .formula { font-size: 18px; margin-bottom: 24px; }
     .price-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 32px; align-items: start; }
@@ -117,9 +117,9 @@ type PromoChoice = 'none' | 'RESTORA10' | 'BIENVENUE';
 
     @media (max-width: 800px) {
       .how-hero h1 { font-size: 34px; }
-      .status-row { grid-template-columns: 1fr; text-align: left; }
-      .status { grid-template-columns: 38px 1fr; justify-items: start; column-gap: 12px; }
-      .status small { grid-column: 2; }
+      .how-status-row { grid-template-columns: 1fr; text-align: left; }
+      .how-status { grid-template-columns: 38px 1fr; justify-items: start; column-gap: 12px; }
+      .how-status small { grid-column: 2; }
       .price-grid { grid-template-columns: 1fr; }
     }
   `]
