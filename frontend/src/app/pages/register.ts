@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { ToastService } from '../core/toast.service';
 import { AuthShell } from '../shared/auth-shell';
 import { PasswordToggle } from '../shared/password-toggle';
 
@@ -69,6 +70,7 @@ import { PasswordToggle } from '../shared/password-toggle';
 export class Register {
   private auth = inject(AuthService);
   private router = inject(Router);
+  private toast = inject(ToastService);
 
   // Les 6 champs exigés par le cahier des charges
   form = { nom: '', prenom: '', email: '', telephone: '', password: '', confirmation: '' };
@@ -81,8 +83,11 @@ export class Register {
     this.error.set('');
     this.loading.set(true);
     this.auth.register(this.form).subscribe({
-      // Après l'inscription, le client est déjà connecté
-      next: () => this.router.navigate(['/restaurants']),
+      // Après l'inscription, affiche un toast puis redirige
+      next: () => {
+        this.toast.show(`Bienvenue ${this.form.prenom} ! Compte créé avec succès.`);
+        setTimeout(() => this.router.navigate(['/restaurants']), 850);
+      },
       error: (err) => {
         this.error.set(err.error?.message || 'Serveur injoignable. Le backend est-il lancé ?');
         this.loading.set(false);

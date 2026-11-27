@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
+import { ToastService } from '../core/toast.service';
 import { AuthShell } from '../shared/auth-shell';
 import { PasswordToggle } from '../shared/password-toggle';
 
@@ -41,6 +42,7 @@ import { PasswordToggle } from '../shared/password-toggle';
 export class Login {
   private auth = inject(AuthService);   // service qui parle à l'API
   private router = inject(Router);      // pour changer de page
+  private toast = inject(ToastService);
 
   // Valeurs saisies dans le formulaire
   email = '';
@@ -53,10 +55,11 @@ export class Login {
     this.error.set('');
     this.loading.set(true);
     this.auth.login(this.email, this.password).subscribe({
-      // Succès : chaque rôle arrive sur sa page
+      // Succès : affiche un toast puis redirige selon le rôle
       next: (res) => {
         const target = { client: '/restaurants', restaurateur: '/restaurateur', admin: '/admin' }[res.user.role];
-        this.router.navigate([target]);
+        this.toast.show(`Bienvenue ${res.user.prenom || res.user.nom} ! Connexion réussie.`);
+        setTimeout(() => this.router.navigate([target]), 850);
       },
       // Erreur : on affiche le message du serveur
       error: (err) => {
