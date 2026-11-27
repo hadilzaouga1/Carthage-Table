@@ -3,12 +3,14 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { ThemeService } from '../core/theme.service';
+import { ToastService } from '../core/toast.service';
 import { Icon } from '../core/icon';
+import { ConfirmDialog } from '../shared/confirm-dialog';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive, Icon],
+  imports: [RouterLink, RouterLinkActive, Icon, ConfirmDialog],
   template: `
     <header class="site-header">
       <div class="container header-inner">
@@ -44,7 +46,7 @@ import { Icon } from '../core/icon';
             <a routerLink="/panier" class="icon-button cart-link" aria-label="Panier"><app-icon name="shopping-bag"></app-icon></a>
           }
           @if (auth.user()) {
-            <button type="button" class="btn-ghost login-button" (click)="auth.logout()"><app-icon name="user"></app-icon><span class="login-label">Déconnexion</span></button>
+            <button type="button" class="btn-ghost login-button" (click)="showLogoutDialog.set(true)"><app-icon name="user"></app-icon><span class="login-label">Déconnexion</span></button>
           } @else {
             <a routerLink="/login" class="btn-tomato login-button"><app-icon name="user"></app-icon><span class="login-label">Se connecter</span></a>
           }
@@ -54,10 +56,31 @@ import { Icon } from '../core/icon';
         </div>
       </div>
     </header>
+
+    <!-- Dialogue de confirmation de déconnexion -->
+    <app-confirm-dialog
+      [open]="showLogoutDialog()"
+      title="Déconnexion"
+      message="Êtes-vous sûr de vouloir vous déconnecter de votre compte Restora ?"
+      confirmText="Se déconnecter"
+      cancelText="Annuler"
+      [danger]="true"
+      iconName="log-out"
+      (confirmed)="confirmLogout()"
+      (cancelled)="showLogoutDialog.set(false)"
+    />
   `
 })
 export class Navbar {
   auth = inject(AuthService);
   theme = inject(ThemeService);
+  toast = inject(ToastService);
   mobileOpen = signal(false); // menu mobile ouvert ou non
+  showLogoutDialog = signal(false); // modal de confirmation déconnexion
+
+  confirmLogout() {
+    this.showLogoutDialog.set(false);
+    this.auth.logout();
+    this.toast.show('Vous avez été déconnecté avec succès.', 'info');
+  }
 }
