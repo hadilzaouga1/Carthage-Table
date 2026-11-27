@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Dish from '../models/Dish.js';
 import Category from '../models/Category.js';
 import { loadManagedRestaurant, httpError } from '../utils/ownership.js';
+import { listDishes } from '../services/dishService.js';
 
 const WRITABLE = ['nom', 'description', 'prix', 'image', 'icon', 'disponible', 'categorie'];
 const pick = (obj, keys) => Object.fromEntries(keys.filter((k) => obj[k] !== undefined).map((k) => [k, obj[k]]));
@@ -15,19 +16,26 @@ async function assertCategoryMatches(categoryId, restaurantId) {
   }
 }
 
-// GET /api/dishes?restaurant=&categorie=&q=
+// GET /api/dishes?restaurant=&categorie=&q=&page=&limit=
 export const list = async (req, res, next) => {
   try {
-    const { restaurant, categorie, q } = req.query;
-    const filter = {};
-    if (restaurant) {
-      if (!mongoose.isValidObjectId(restaurant)) throw httpError(422, 'Paramètre "restaurant" invalide.');
-      filter.restaurant = restaurant;
-    }
-    if (categorie) filter.categorie = categorie;
-    if (q) filter.nom = { $regex: escapeRegex(String(q).trim()), $options: 'i' };
+    const result = await listDishes(
+      {
+        restaurant: req.query.restaurant,
+        categorie: req.query.categorie,
+        search: req.query.search,
+        q: req.query.q,
+        page: req.query.page,
+        limit: req.query.limit,
+      },
+      req.user
+    );
 
-    res.json({ success: true, items: await Dish.find(filter).sort({ nom: 1 }).limit(200) });
+    if (Array.isArray(result)) {
+      res.json({ success: true, items: result, dishes: result });
+    } else {
+      res.json({ success: true, ...result, items: result.dishes });
+    }
   } catch (err) {
     next(err);
   }

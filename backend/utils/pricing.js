@@ -5,7 +5,7 @@ export const round = (n) => Math.round(n * 1000) / 1000;
 
 // Codes promo connus du serveur (le serveur décide, jamais Angular)
 export const PROMOS = {
-  CARTHAGE10: { type: 'percent', value: 10 },   // -10 % sur le sous-total
+  RESTORA10: { type: 'percent', value: 10 },   // -10 % sur le sous-total
   BIENVENUE: { type: 'free_delivery' }          // livraison offerte
 };
 

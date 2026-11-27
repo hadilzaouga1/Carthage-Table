@@ -2270,6 +2270,46 @@
           ]
         },
         {
+          "name": "(Admin) Commandes du jour",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenAdmin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders/today",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders",
+                "today"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Code 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Contient data, orders et totalCommandes\", () => { pm.expect(j).to.have.property(\"data\"); pm.expect(j.data).to.have.property(\"orders\"); pm.expect(j.data).to.have.property(\"totalCommandes\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "(Client) Statistiques : interdit",
           "request": {
             "method": "GET",

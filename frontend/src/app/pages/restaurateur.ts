@@ -59,7 +59,7 @@ const CAN_CANCEL: OrderStatus[] = ['en_attente', 'acceptee', 'en_preparation'];
             <strong>{{ o.client?.prenom }} {{ o.client?.nom }} <small>{{ o.client?.telephone }}</small></strong>
             <span class="badge" [attr.data-s]="o.statut">{{ label(o.statut) }}</span>
           </div>
-          <small>{{ o.restaurant.nom }} · {{ o.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+          <small>{{ o.restaurant?.nom || 'Restaurant non disponible' }} · {{ o.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
           <ul>
             @for (a of o.articles; track a.plat) { <li>{{ a.quantite }} × {{ a.nom }}</li> }
           </ul>

@@ -30,3 +30,22 @@ export const protect = asyncHandler(async (req, res, next) => {
   req.user = user;
   next();
 });
+
+// Middleware optionnel : si un token Bearer valide est présent, req.user est injecté
+export const optionalProtect = asyncHandler(async (req, res, next) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = header.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (user && user.isActive) {
+      req.user = user;
+    }
+  } catch {
+    // Si token invalide ou expiré, on continue sans bloquer (visiteur public)
+  }
+  next();
+});
