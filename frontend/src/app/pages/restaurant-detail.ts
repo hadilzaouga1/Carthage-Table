@@ -4,7 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantService, Restaurant, Category, Dish } from '../core/restaurant.service';
 import { CartService } from '../core/cart.service';
 import { AuthService } from '../core/auth.service';
-import { dishPhotoUrl, DEFAULT_DISH_IMAGE } from '../core/media';
+import { dishPhotoUrl, resolveMediaUrl, DEFAULT_DISH_IMAGE } from '../core/media';
 
 @Component({
   selector: 'app-restaurant-detail',
@@ -37,7 +37,7 @@ import { dishPhotoUrl, DEFAULT_DISH_IMAGE } from '../core/media';
           <div class="dish-list">
             @for (d of dishesOf(c._id); track d._id) {
               <div class="dish">
-                <img class="dish-photo" [src]="photo(d.image)" [alt]="d.nom" loading="lazy" (error)="$any($event.target).src = defaultImg" />
+                <img class="dish-photo" [src]="photo(d.image, d.nom)" [alt]="d.nom" loading="lazy" (error)="$any($event.target).src = defaultImg" />
                 <div class="dish-info"><strong>{{ d.nom }}</strong><p>{{ d.description }}</p></div>
                 <div class="dish-side">
                   <span class="price">{{ d.prix.toFixed(2) }} DT</span>
@@ -110,7 +110,7 @@ export class RestaurantDetail implements OnInit {
 
   // Bannière et photo du restaurant selon image et type de cuisine
   restoPhoto(image?: string, cuisine?: string) {
-    if (image) return /^(https?:)?\/\//.test(image) ? image : `img/${image}`;
+    if (image) return resolveMediaUrl(image);
     const t = (cuisine || '').toLowerCase();
     if (t.includes('burger') || t.includes('fast-food') || t.includes('américain')) return 'img/burger.jpg';
     if (t.includes('tunisien') || t.includes('oriental') || t.includes('traditionnel')) return 'img/chez-mami.jpg';

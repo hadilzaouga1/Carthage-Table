@@ -5,6 +5,7 @@ import { Icon } from '../core/icon';
 import { Restaurant } from '../core/restaurant.service';
 import { FavoriteService } from '../core/favorite.service';
 import { AuthService } from '../core/auth.service';
+import { resolveMediaUrl } from '../core/media';
 
 @Component({
   selector: 'app-restaurant-card',
@@ -67,7 +68,7 @@ export class RestaurantCard {
   src = computed(() => {
     const image = this.r().image;
     if (this.failed() || !image) return this.fallbackByCuisine(this.r().typeCuisine);
-    return /^(https?:)?\/\//.test(image) ? image : `img/${image}`;
+    return resolveMediaUrl(image);
   });
 
   toggleFavorite(event: Event) {

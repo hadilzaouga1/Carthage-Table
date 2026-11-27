@@ -23,7 +23,7 @@ import { dishPhotoUrl, DEFAULT_DISH_IMAGE } from '../core/media';
         <div class="lines">
           @for (l of cart.lines(); track l.plat) {
             <div class="line">
-              <img class="dish-thumb" [src]="photo(l.image)" [alt]="l.nom" (error)="$any($event.target).src = defaultImg" />
+              <img class="dish-thumb" [src]="photo(l.image, l.nom)" [alt]="l.nom" (error)="$any($event.target).src = defaultImg" />
               <span class="name">{{ l.nom }}</span>
               <span class="qty">
                 <button type="button" class="btn-ghost" (click)="cart.change(l.plat, -1)">−</button>

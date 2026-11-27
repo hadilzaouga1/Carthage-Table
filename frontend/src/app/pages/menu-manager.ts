@@ -102,7 +102,7 @@ import { dishPhotoUrl, DEFAULT_DISH_IMAGE } from '../core/media';
         <h3>Mes plats ({{ dishes().length }})</h3>
         @for (d of dishes(); track d._id) {
           <div class="dish">
-            <img class="dish-thumb" [src]="photo(d.image)" [alt]="d.nom" (error)="$any($event.target).src = defaultImg" />
+            <img class="dish-thumb" [src]="photo(d.image, d.nom)" [alt]="d.nom" (error)="$any($event.target).src = defaultImg" />
             <div class="info"><strong>{{ d.nom }}</strong><small>{{ catName2(d.categorie) }} · {{ d.prix.toFixed(2) }} DT</small></div>
             <button type="button" class="btn-ghost" (click)="toggleDish(d)">{{ d.disponible ? 'Disponible' : 'Indisponible' }}</button>
             <button type="button" class="btn-ghost" (click)="edit(d)">Modifier</button>
