@@ -4,6 +4,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { RestaurantService, Restaurant, Category, Dish } from '../core/restaurant.service';
 import { CartService } from '../core/cart.service';
 import { AuthService } from '../core/auth.service';
+import { dishPhotoUrl, DEFAULT_DISH_IMAGE } from '../core/media';
 
 @Component({
   selector: 'app-restaurant-detail',
@@ -36,12 +37,7 @@ import { AuthService } from '../core/auth.service';
           <div class="dish-list">
             @for (d of dishesOf(c._id); track d._id) {
               <div class="dish">
-                @if (d.image) {
-                  <!-- Photo du plat ; si elle est introuvable, elle disparaît -->
-                  <img class="dish-photo" [src]="photo(d.image)" [alt]="d.nom" loading="lazy" (error)="$any($event.target).style.display = 'none'" />
-                } @else {
-                  <div class="dish-icon">{{ d.icon }}</div>
-                }
+                <img class="dish-photo" [src]="photo(d.image)" [alt]="d.nom" loading="lazy" (error)="$any($event.target).src = defaultImg" />
                 <div class="dish-info"><strong>{{ d.nom }}</strong><p>{{ d.description }}</p></div>
                 <div class="dish-side">
                   <span class="price">{{ d.prix.toFixed(2) }} DT</span>
@@ -108,8 +104,9 @@ export class RestaurantDetail implements OnInit {
     });
   }
 
-  // Adresse de la photo d'un plat : lien complet (https://...) utilisé tel quel, sinon fichier du dossier public/img
-  photo(image: string) { return /^(https?:)?\/\//.test(image) ? image : `img/${image}`; }
+  defaultImg = DEFAULT_DISH_IMAGE;
+  // Adresse de la photo d'un plat (image réelle ou image par défaut)
+  photo = dishPhotoUrl;
 
   // Bannière et photo du restaurant selon image et type de cuisine
   restoPhoto(image?: string, cuisine?: string) {

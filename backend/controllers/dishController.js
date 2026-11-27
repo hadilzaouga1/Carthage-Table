@@ -41,12 +41,26 @@ export const list = async (req, res, next) => {
   }
 };
 
+// POST /api/dishes/upload
+export const uploadImage = (req, res, next) => {
+  try {
+    if (!req.file) throw httpError(400, 'Veuillez sélectionner une image.');
+    res.status(201).json({ success: true, image: `/uploads/dishes/${req.file.filename}` });
+  } catch (err) {
+    next(err);
+  }
+};
+
 // POST /api/dishes
 export const create = async (req, res, next) => {
   try {
     await loadManagedRestaurant(req.body.restaurant, req.user);
     await assertCategoryMatches(req.body.categorie, req.body.restaurant);
-    const dish = await Dish.create({ ...pick(req.body, WRITABLE), restaurant: req.body.restaurant });
+    const data = pick(req.body, WRITABLE);
+    if (!data.image || !String(data.image).trim()) {
+      data.image = 'plats/default-dish1.jpg';
+    }
+    const dish = await Dish.create({ ...data, restaurant: req.body.restaurant });
     res.status(201).json({ success: true, dish });
   } catch (err) {
     next(err);

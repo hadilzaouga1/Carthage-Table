@@ -33,8 +33,8 @@ async function run() {
 
   if ((await Dish.countDocuments({ restaurant: r._id })) === 0) {
     await Dish.create([
-      { nom: 'Couscous', description: 'Couscous agneau', prix: 18, icon: '🍲', categorie: cat._id, restaurant: r._id, disponible: true },
-      { nom: 'Brik', description: 'Brik à l\'œuf', prix: 4, icon: '🥟', categorie: cat._id, restaurant: r._id, disponible: true }
+      { nom: 'Couscous', description: 'Couscous agneau', prix: 18, image: 'plats/couscous.jpg', icon: '', categorie: cat._id, restaurant: r._id, disponible: true },
+      { nom: 'Brik', description: 'Brik à l\'œuf', prix: 4, image: 'plats/brik.jpg', icon: '', categorie: cat._id, restaurant: r._id, disponible: true }
     ]);
     console.log('2 plats créés');
   }

@@ -3,12 +3,16 @@ import { body } from 'express-validator';
 import validate from '../middleware/validate.js';
 import { protect, optionalProtect } from '../middleware/authMiddleware.js';
 import { authorize } from '../middleware/roleMiddleware.js';
+import { uploadDishImage } from '../middleware/uploadMiddleware.js';
 import * as c from '../controllers/dishController.js';
 
 const router = Router();
 
 // Public : le client voit les plats du menu (optionalProtect permet au restaurateur/admin d'accéder à leurs restaurants en attente)
 router.get('/', optionalProtect, c.list);
+
+// Upload d'une photo de plat (restaurateur ou admin)
+router.post('/upload', protect, authorize('restaurateur', 'admin'), uploadDishImage.single('image'), c.uploadImage);
 
 // Privé : seul un restaurateur ou un admin peut créer un plat
 router.post(

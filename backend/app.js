@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import cors from 'cors';
 import routes from './routes/index.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
@@ -11,6 +12,9 @@ app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:4200' }));
 
 // Permet de lire le JSON envoyé dans le corps des requêtes (req.body)
 app.use(express.json());
+
+// Fichiers uploadés (photos des plats)
+app.use('/uploads', express.static(path.resolve('uploads')));
 
 // Toutes nos routes commencent par /api
 app.use('/api', routes);

@@ -9,7 +9,7 @@ export interface MyRestaurant {
   description?: string; adresse?: string; typeCuisine?: string; horaires?: string; fraisLivraison?: number; image?: string;
 }
 export interface Cat { _id: string; nom: string; }
-export interface MenuDish { _id: string; nom: string; description: string; prix: number; icon: string; image?: string; disponible: boolean; categorie: string; }
+export interface MenuDish { _id: string; nom: string; description: string; prix: number; icon?: string; image?: string; disponible: boolean; categorie: string; }
 
 @Injectable({ providedIn: 'root' })
 export class MenuService {
@@ -44,8 +44,13 @@ export class MenuService {
   dishes(restaurantId: string) {
     return this.http.get<any>(`${API_URL}/dishes`, { params: { restaurant: restaurantId } }).pipe(map((r) => (r.items ?? []) as MenuDish[]));
   }
-  addDish(body: { restaurant: string; categorie: string; nom: string; prix: number; description: string; icon: string; image?: string }) {
+  addDish(body: { restaurant: string; categorie: string; nom: string; prix: number; description: string; image?: string }) {
     return this.http.post(`${API_URL}/dishes`, body);
+  }
+  uploadDishImage(file: File) {
+    const form = new FormData();
+    form.append('image', file);
+    return this.http.post<{ success: boolean; image: string }>(`${API_URL}/dishes/upload`, form);
   }
   updateDish(id: string, body: Partial<MenuDish>) { return this.http.put(`${API_URL}/dishes/${id}`, body); }
   deleteDish(id: string) { return this.http.delete(`${API_URL}/dishes/${id}`); }

@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { CartService } from '../core/cart.service';
 import { OrderService } from '../core/order.service';
 import { AuthService } from '../core/auth.service';
+import { dishPhotoUrl, DEFAULT_DISH_IMAGE } from '../core/media';
 
 @Component({
   selector: 'app-cart',
@@ -22,7 +23,7 @@ import { AuthService } from '../core/auth.service';
         <div class="lines">
           @for (l of cart.lines(); track l.plat) {
             <div class="line">
-              <span class="icon">{{ l.icon }}</span>
+              <img class="dish-thumb" [src]="photo(l.image)" [alt]="l.nom" (error)="$any($event.target).src = defaultImg" />
               <span class="name">{{ l.nom }}</span>
               <span class="qty">
                 <button type="button" class="btn-ghost" (click)="cart.change(l.plat, -1)">−</button>
@@ -99,6 +100,7 @@ import { AuthService } from '../core/auth.service';
   styles: [`
     .lines { display: grid; gap: 10px; margin: 16px 0; }
     .line { display: flex; align-items: center; gap: 14px; padding: 12px 16px; border: 1px solid rgba(128,128,128,.3); border-radius: 14px; }
+    .dish-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
     .name { flex: 1; font-weight: 600; }
     .qty { display: flex; align-items: center; gap: 10px; }
     .amount { min-width: 90px; text-align: right; font-weight: 700; }
@@ -131,6 +133,8 @@ export class Cart {
   remarque = signal('');
   sending = signal(false);
   error = signal('');
+  defaultImg = DEFAULT_DISH_IMAGE;
+  photo = dishPhotoUrl;
 
   applyCode() {
     this.cart.applyPromo(this.promoDraft());

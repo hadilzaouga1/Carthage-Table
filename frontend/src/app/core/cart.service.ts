@@ -6,7 +6,8 @@ export interface CartLine {
   plat: string;
   nom: string;
   prix: number;
-  icon: string;
+  image?: string;
+  icon?: string;
   quantite: number;
 }
 
@@ -79,7 +80,7 @@ export class CartService {
   // Ajouter un plat (ou +1 s'il est déjà dans le panier)
   add(
     r: { _id: string; nom: string; fraisLivraison: number },
-    d: { _id: string; nom: string; prix: number; icon: string }
+    d: { _id: string; nom: string; prix: number; image?: string; icon?: string }
   ) {
     this.restaurantId.set(r._id);
     this.restaurantNom.set(r.nom);
@@ -88,7 +89,7 @@ export class CartService {
     if (existing) {
       this.lines.update((ls) => ls.map((l) => (l.plat === d._id ? { ...l, quantite: l.quantite + 1 } : l)));
     } else {
-      this.lines.update((ls) => [...ls, { plat: d._id, nom: d.nom, prix: d.prix, icon: d.icon, quantite: 1 }]);
+      this.lines.update((ls) => [...ls, { plat: d._id, nom: d.nom, prix: d.prix, image: d.image, quantite: 1 }]);
     }
     this.persist();
   }

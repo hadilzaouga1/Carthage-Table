@@ -2,6 +2,7 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { MenuService, MyRestaurant, Cat, MenuDish } from '../core/menu.service';
 import { CuisineService } from '../core/cuisine.service';
+import { dishPhotoUrl, DEFAULT_DISH_IMAGE } from '../core/media';
 
 @Component({
   selector: 'app-menu-manager',
@@ -77,14 +78,22 @@ import { CuisineService } from '../core/cuisine.service';
           <input placeholder="Nom du plat *" [value]="nom()" (input)="nom.set($any($event.target).value)" />
           <input placeholder="Prix en DT *" [value]="prix()" (input)="prix.set($any($event.target).value)" />
           <input placeholder="Description" [value]="description()" (input)="description.set($any($event.target).value)" />
-          <input placeholder="Emoji (ex : 🍕)" [value]="icon()" (input)="icon.set($any($event.target).value)" />
-          <input placeholder="Photo du plat (nom de fichier dans public/img ou lien https)" [value]="image()" (input)="image.set($any($event.target).value)" />
+          <div class="upload-box">
+            <img class="dish-preview" [src]="photo(image())" alt="Aperçu du plat" (error)="$any($event.target).src = defaultImg" />
+            <div class="upload-controls">
+              <label class="upload-label">
+                <span>{{ uploading() ? 'Envoi en cours...' : 'Uploader une image (JPG, PNG, WebP)' }}</span>
+                <input type="file" accept="image/*" [disabled]="uploading()" (change)="onDishImageSelected($event)" />
+              </label>
+              <input placeholder="Ou chemin / lien image (ex : plats/couscous.jpg)" [value]="image()" (input)="image.set($any($event.target).value)" />
+            </div>
+          </div>
           <select (change)="categorie.set($any($event.target).value)">
             <option value="">Catégorie *</option>
             @for (c of categories(); track c._id) { <option [value]="c._id" [selected]="c._id === categorie()">{{ c.nom }}</option> }
           </select>
           <div class="row">
-            <button type="button" class="btn-tomato" (click)="saveDish()">{{ editingId() ? 'Enregistrer' : 'Ajouter le plat' }}</button>
+            <button type="button" class="btn-tomato" [disabled]="uploading()" (click)="saveDish()">{{ editingId() ? 'Enregistrer' : 'Ajouter le plat' }}</button>
             @if (editingId()) { <button type="button" class="btn-ghost" (click)="resetDish()">Annuler</button> }
           </div>
         </div>
@@ -93,7 +102,7 @@ import { CuisineService } from '../core/cuisine.service';
         <h3>Mes plats ({{ dishes().length }})</h3>
         @for (d of dishes(); track d._id) {
           <div class="dish">
-            <span class="ico">{{ d.icon }}</span>
+            <img class="dish-thumb" [src]="photo(d.image)" [alt]="d.nom" (error)="$any($event.target).src = defaultImg" />
             <div class="info"><strong>{{ d.nom }}</strong><small>{{ catName2(d.categorie) }} · {{ d.prix.toFixed(2) }} DT</small></div>
             <button type="button" class="btn-ghost" (click)="toggleDish(d)">{{ d.disponible ? 'Disponible' : 'Indisponible' }}</button>
             <button type="button" class="btn-ghost" (click)="edit(d)">Modifier</button>
@@ -111,7 +120,11 @@ import { CuisineService } from '../core/cuisine.service';
     .chip { display: inline-flex; gap: 8px; align-items: center; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(128,128,128,.4); }
     .chip button { border: 0; background: transparent; color: inherit; cursor: pointer; }
     .dish { display: flex; align-items: center; gap: 12px; padding: 10px 14px; margin: 8px 0; border: 1px solid rgba(128,128,128,.3); border-radius: 14px; }
-    .ico { font-size: 1.8rem; }
+    .dish-thumb { width: 56px; height: 56px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+    .upload-box { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px dashed rgba(128,128,128,.45); border-radius: 12px; }
+    .dish-preview { width: 68px; height: 68px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+    .upload-controls { flex: 1; display: grid; gap: 8px; }
+    .upload-label { display: grid; gap: 4px; font-size: .88rem; opacity: .9; }
     .info { flex: 1; display: grid; }
     .notice { padding: 10px 14px; border-radius: 12px; border: 1px solid #f5a623; }
     .error { color: #e5484d; font-weight: 600; }
@@ -135,7 +148,10 @@ export class MenuManager implements OnInit {
   // Formulaire catégorie et plat
   catName = signal('');
   editingId = signal('');
-  nom = signal(''); prix = signal(''); description = signal(''); icon = signal('🍽️'); image = signal(''); categorie = signal('');
+  nom = signal(''); prix = signal(''); description = signal(''); image = signal(''); categorie = signal('');
+  uploading = signal(false);
+  defaultImg = DEFAULT_DISH_IMAGE;
+  photo = dishPhotoUrl;
   // Formulaire « modifier mon restaurant »
   editing = signal(false);
   eNom = signal(''); eDescription = signal(''); eAdresse = signal(''); eCuisine = signal(''); eHoraires = signal(''); eFrais = signal(''); eImage = signal('');
@@ -229,19 +245,37 @@ export class MenuManager implements OnInit {
     this.api.deleteCategory(c._id).subscribe({ next: () => this.loadMenu(), error: this.fail });
   }
 
-  resetDish() { this.editingId.set(''); this.nom.set(''); this.prix.set(''); this.description.set(''); this.icon.set('🍽️'); this.image.set(''); this.categorie.set(''); }
+  resetDish() { this.editingId.set(''); this.nom.set(''); this.prix.set(''); this.description.set(''); this.image.set(''); this.categorie.set(''); }
 
   edit(d: MenuDish) {
     this.editingId.set(d._id); this.nom.set(d.nom); this.prix.set(String(d.prix));
-    this.description.set(d.description); this.icon.set(d.icon); this.image.set(d.image ?? ''); this.categorie.set(d.categorie);
+    this.description.set(d.description); this.image.set(d.image ?? ''); this.categorie.set(d.categorie);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  onDishImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    this.error.set('');
+    this.uploading.set(true);
+    this.api.uploadDishImage(file).subscribe({
+      next: (res) => {
+        this.image.set(res.image);
+        this.uploading.set(false);
+      },
+      error: (err) => {
+        this.uploading.set(false);
+        this.fail(err);
+      }
+    });
   }
 
   saveDish() {
     const prix = Number(this.prix().replace(',', '.'));
     if (!this.nom().trim() || isNaN(prix) || prix < 0 || !this.categorie()) { this.error.set('Nom, prix et catégorie sont obligatoires.'); return; }
     this.error.set('');
-    const data = { nom: this.nom().trim(), prix, description: this.description().trim(), icon: this.icon() || '🍽️', image: this.image().trim(), categorie: this.categorie() };
+    const data = { nom: this.nom().trim(), prix, description: this.description().trim(), image: this.image().trim() || DEFAULT_DISH_IMAGE.replace(/^img\//, ''), categorie: this.categorie() };
     const done = { next: () => { this.resetDish(); this.loadMenu(); }, error: this.fail };
     if (this.editingId()) this.api.updateDish(this.editingId(), data).subscribe(done);
     else this.api.addDish({ ...data, restaurant: this.currentId() }).subscribe(done);
