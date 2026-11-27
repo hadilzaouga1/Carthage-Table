@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { AuthShell } from '../shared/auth-shell';
+import { PasswordToggle } from '../shared/password-toggle';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [FormsModule, AuthShell],
+  imports: [FormsModule, AuthShell, PasswordToggle],
   template: `
     <app-auth-shell heading="Rejoignez-nous" sub="Créez votre compte en une minute.">
       <form (ngSubmit)="submit()">
@@ -41,15 +42,21 @@ import { AuthShell } from '../shared/auth-shell';
 
         <div class="form-field">
           <label class="form-label" for="password">Mot de passe</label>
-          <input id="password" class="field" type="password" name="password" [(ngModel)]="form.password"
-                 autocomplete="new-password" required />
+          <div class="password-wrap">
+            <input id="password" class="field" [type]="showPwd() ? 'text' : 'password'" name="password" [(ngModel)]="form.password"
+                   autocomplete="new-password" required />
+            <app-password-toggle [visible]="showPwd()" (toggled)="showPwd.set(!showPwd())" />
+          </div>
           <small class="form-hint">8 caractères minimum, avec une lettre et un chiffre</small>
         </div>
 
         <div class="form-field">
           <label class="form-label" for="confirmation">Confirmation du mot de passe</label>
-          <input id="confirmation" class="field" type="password" name="confirmation" [(ngModel)]="form.confirmation"
-                 autocomplete="new-password" required />
+          <div class="password-wrap">
+            <input id="confirmation" class="field" [type]="showConfirm() ? 'text' : 'password'" name="confirmation" [(ngModel)]="form.confirmation"
+                   autocomplete="new-password" required />
+            <app-password-toggle [visible]="showConfirm()" (toggled)="showConfirm.set(!showConfirm())" />
+          </div>
         </div>
 
         <button type="submit" class="btn-gold btn-block" [disabled]="loading()">
@@ -65,6 +72,8 @@ export class Register {
 
   // Les 6 champs exigés par le cahier des charges
   form = { nom: '', prenom: '', email: '', telephone: '', password: '', confirmation: '' };
+  showPwd = signal(false);
+  showConfirm = signal(false);
   error = signal('');
   loading = signal(false);
 

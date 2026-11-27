@@ -2,11 +2,12 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../core/auth.service';
 import { UserService } from '../core/user.service';
+import { PasswordToggle } from '../shared/password-toggle';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, PasswordToggle],
   styles: [`
     .profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; align-items: start; }
     .panel-card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 28px; box-shadow: var(--shadow); }
@@ -63,15 +64,24 @@ import { UserService } from '../core/user.service';
 
           <div class="form-field">
             <label class="form-label" for="old">Ancien mot de passe</label>
-            <input id="old" class="field" type="password" name="old" [(ngModel)]="oldPassword" autocomplete="current-password" required />
+            <div class="password-wrap">
+              <input id="old" class="field" [type]="showOld() ? 'text' : 'password'" name="old" [(ngModel)]="oldPassword" autocomplete="current-password" required />
+              <app-password-toggle [visible]="showOld()" (toggled)="showOld.set(!showOld())" />
+            </div>
           </div>
           <div class="form-field">
             <label class="form-label" for="new">Nouveau mot de passe</label>
-            <input id="new" class="field" type="password" name="new" [(ngModel)]="newPassword" autocomplete="new-password" required />
+            <div class="password-wrap">
+              <input id="new" class="field" [type]="showNew() ? 'text' : 'password'" name="new" [(ngModel)]="newPassword" autocomplete="new-password" required />
+              <app-password-toggle [visible]="showNew()" (toggled)="showNew.set(!showNew())" />
+            </div>
           </div>
           <div class="form-field">
             <label class="form-label" for="confirm">Confirmer le nouveau mot de passe</label>
-            <input id="confirm" class="field" type="password" name="confirm" [(ngModel)]="confirm" autocomplete="new-password" required />
+            <div class="password-wrap">
+              <input id="confirm" class="field" [type]="showConfirm() ? 'text' : 'password'" name="confirm" [(ngModel)]="confirm" autocomplete="new-password" required />
+              <app-password-toggle [visible]="showConfirm()" (toggled)="showConfirm.set(!showConfirm())" />
+            </div>
           </div>
           <small class="results-count">Au moins 8 caractères, avec une lettre et un chiffre.</small><br />
           <button type="submit" class="btn-gold" [disabled]="pwdLoading()">{{ pwdLoading() ? 'Modification…' : 'Modifier le mot de passe' }}</button>
@@ -91,6 +101,9 @@ export class Profile {
   oldPassword = '';
   newPassword = '';
   confirm = '';
+  showOld = signal(false);
+  showNew = signal(false);
+  showConfirm = signal(false);
 
   infoError = signal(''); infoOk = signal(''); infoLoading = signal(false);
   pwdError = signal(''); pwdOk = signal(''); pwdLoading = signal(false);

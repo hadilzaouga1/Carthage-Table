@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { AuthShell } from '../shared/auth-shell';
+import { PasswordToggle } from '../shared/password-toggle';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [FormsModule, AuthShell],
+  imports: [FormsModule, AuthShell, PasswordToggle],
   template: `
     <app-auth-shell heading="Bon retour" sub="Connectez-vous pour commander vos plats préférés.">
       <form (ngSubmit)="submit()">
@@ -23,8 +24,11 @@ import { AuthShell } from '../shared/auth-shell';
 
         <div class="form-field">
           <label class="form-label" for="password">Mot de passe</label>
-          <input id="password" class="field" type="password" name="password" [(ngModel)]="password"
-                 placeholder="••••••••" autocomplete="current-password" required />
+          <div class="password-wrap">
+            <input id="password" class="field" [type]="showPwd() ? 'text' : 'password'" name="password" [(ngModel)]="password"
+                   placeholder="••••••••" autocomplete="current-password" required />
+            <app-password-toggle [visible]="showPwd()" (toggled)="showPwd.set(!showPwd())" />
+          </div>
         </div>
 
         <button type="submit" class="btn-gold btn-block" [disabled]="loading()">
@@ -41,6 +45,7 @@ export class Login {
   // Valeurs saisies dans le formulaire
   email = '';
   password = '';
+  showPwd = signal(false);
   error = signal('');
   loading = signal(false);
 

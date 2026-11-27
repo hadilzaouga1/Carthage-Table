@@ -162,6 +162,14 @@ img { max-width: 100%; display: block; }
 .search-box svg { position: absolute; left: 17px; top: 17px; width: 18px; color: var(--muted-foreground); }
 .field { width: 100%; border: 1px solid var(--border); background: var(--card); color: var(--foreground); border-radius: 10px; min-height: 50px; padding: 13px 16px; font-size: 12px; }
 .search-box .field { padding-left: 46px; }
+.password-wrap { position: relative; display: flex; align-items: center; }
+.password-wrap .field { padding-right: 46px; }
+.password-toggle {
+  position: absolute; right: 12px; background: transparent; border: 0;
+  color: var(--muted-foreground); cursor: pointer; padding: 4px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.password-toggle:hover { color: var(--foreground); }
 .check-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; white-space: nowrap; }
 input[type=checkbox] { accent-color: var(--primary); width: 16px; height: 16px; }
 .sort-select { width: 155px; }
