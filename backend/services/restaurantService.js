@@ -2,6 +2,7 @@ import Restaurant from '../models/Restaurant.js';
 import Category from '../models/Category.js';
 import Dish from '../models/Dish.js';
 import User from '../models/User.js';
+import Order from '../models/Order.js';
 import ApiError from '../utils/ApiError.js';
 import pick from '../utils/pick.js';
 import assertCanManage from '../utils/assertCanManage.js';
@@ -95,6 +96,10 @@ export async function updateRestaurant(user, id, body) {
 export async function deleteRestaurant(user, id) {
   const restaurant = await findOrFail(id);
   assertCanManage(user, restaurant);
+  const orderCount = await Order.countDocuments({ restaurant: id });
+  if (orderCount > 0) {
+    throw new ApiError(400, 'Impossible de supprimer un restaurant ayant des commandes.');
+  }
   await Dish.deleteMany({ restaurant: id });
   await Category.deleteMany({ restaurant: id });
   await restaurant.deleteOne();

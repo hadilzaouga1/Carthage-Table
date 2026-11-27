@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Restaurant from '../models/Restaurant.js';
 import Category from '../models/Category.js';
 import Dish from '../models/Dish.js';
+import Order from '../models/Order.js';
 import { loadManagedRestaurant, httpError } from '../utils/ownership.js';
 import { assertCuisineExists } from '../services/cuisineService.js';
 
@@ -137,6 +138,10 @@ export const update = async (req, res, next) => {
 export const remove = async (req, res, next) => {
   try {
     const restaurant = await loadManagedRestaurant(req.params.id, req.user);
+    const orderCount = await Order.countDocuments({ restaurant: restaurant._id });
+    if (orderCount > 0) {
+      throw httpError(400, 'Impossible de supprimer un restaurant ayant des commandes.');
+    }
     await Promise.all([
       Dish.deleteMany({ restaurant: restaurant._id }),
       Category.deleteMany({ restaurant: restaurant._id }),

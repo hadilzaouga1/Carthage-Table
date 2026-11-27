@@ -3,25 +3,8 @@ import Dish from '../models/Dish.js';
 import Restaurant from '../models/Restaurant.js';
 import ApiError from '../utils/ApiError.js';
 import assertCanManage from '../utils/assertCanManage.js';
-
-// Le cycle de vie (règle 8) : à partir d'un statut, quels statuts sont possibles ?
-const TRANSITIONS = {
-  en_attente: ['acceptee', 'annulee'],
-  acceptee: ['en_preparation', 'annulee'],
-  en_preparation: ['en_livraison', 'annulee'],
-  en_livraison: ['livree'],
-  livree: [],   // état final
-  annulee: []   // état final
-};
-
-// Arrondit à 3 décimales (le dinar a des millimes)
-const round = (n) => Math.round(n * 1000) / 1000;
-
-// Codes promo connus du serveur (le serveur décide, jamais Angular)
-const PROMOS = {
-  RESTORA10: { type: 'percent', value: 10 },   // -10 % sur le sous-total
-  BIENVENUE: { type: 'free_delivery' }          // livraison offerte
-};
+import { computeTotals } from '../utils/pricing.js';
+import { canTransition, STATUTS } from '../utils/orderStatus.js';
 
 // Filtre des commandes visibles par un restaurateur : celles de SES restaurants
 // (l'admin voit toutes les commandes)
@@ -84,18 +67,11 @@ if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Rest
   }));
 
   // --- Règle 6 : le total est calculé par le SERVEUR ---
-  const sousTotal = round(lignes.reduce((somme, l) => somme + l.quantite * l.prixUnitaire, 0));
-  // --- Code promo (facultatif) : validé et calculé par le serveur ---
-  const code = typeof codePromo === 'string' ? codePromo.trim().toUpperCase() : '';
-  let remise = 0;
-  let fraisLivraison = restaurant.fraisLivraison;
-  if (code) {
-    const promo = PROMOS[code];
-    if (!promo) throw new ApiError(400, `Code promo invalide : ${code}`);
-    if (promo.type === 'percent') remise = round(Math.min(sousTotal, (sousTotal * promo.value) / 100));
-    if (promo.type === 'free_delivery') fraisLivraison = 0;
-  }
-  const total = round(Math.max(0, sousTotal - remise) + fraisLivraison);
+  const { sousTotal, codePromo: appliedCode, remise, fraisLivraison, total } = computeTotals(
+    lignes,
+    restaurant.fraisLivraison,
+    codePromo
+  );
 
   return Order.create({
     client: user._id,
@@ -103,7 +79,7 @@ if (!restaurant || restaurant.status !== 'valide') throw new ApiError(404, 'Rest
     articles: lignes,
     adresseLivraison: adresseLivraison.trim(),
     sousTotal,
-    codePromo: code || null,
+    codePromo: appliedCode,
     remise,
     fraisLivraison,
     total,
@@ -137,7 +113,7 @@ export async function getOrder(user, id) {
   let allowed = user.role === 'admin' || order.client.toString() === user._id.toString();
   if (!allowed && user.role === 'restaurateur') {
     const restaurant = await Restaurant.findById(order.restaurant);
-    allowed = restaurant.owner.toString() === user._id.toString();
+    allowed = Boolean(restaurant && restaurant.owner && restaurant.owner.toString() === user._id.toString());
   }
   if (!allowed) throw new ApiError(403, "Vous n'avez pas accès à cette commande");
 
@@ -148,7 +124,7 @@ export async function getOrder(user, id) {
 
 // CHANGER LE STATUT
 export async function updateStatus(user, id, statut) {
-  if (!Object.keys(TRANSITIONS).includes(statut)) throw new ApiError(400, 'Statut invalide');
+  if (!STATUTS.includes(statut)) throw new ApiError(400, 'Statut invalide');
 
   const order = await Order.findById(id);
   if (!order) throw new ApiError(404, 'Commande introuvable');
@@ -161,14 +137,16 @@ export async function updateStatus(user, id, statut) {
     if (order.statut !== 'en_attente') throw new ApiError(400, "Vous ne pouvez annuler qu'une commande en attente");
   } else {
     // Règle 7 : un restaurateur ne modifie que les commandes de SES restaurants
-    assertCanManage(user, await Restaurant.findById(order.restaurant));
+    const restaurant = await Restaurant.findById(order.restaurant);
+    if (!restaurant) throw new ApiError(404, 'Restaurant introuvable');
+    assertCanManage(user, restaurant);
   }
 
   // Règle 9 : une commande livrée ne peut plus être modifiée
   if (order.statut === 'livree') throw new ApiError(400, 'Une commande livrée ne peut plus être modifiée');
 
   // Règle 8 : on respecte le cycle de vie
-  if (!TRANSITIONS[order.statut].includes(statut)) {
+  if (!canTransition(order.statut, statut)) {
     throw new ApiError(400, `Passage impossible : ${order.statut} → ${statut}`);
   }
 

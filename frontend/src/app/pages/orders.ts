@@ -27,7 +27,7 @@ const LABELS: Record<string, string> = {
       @for (o of orders(); track o._id) {
         <article class="order">
           <div class="order-head">
-            <strong>{{ o.restaurant.nom }}</strong>
+            <strong>{{ o.restaurant?.nom || 'Restaurant non disponible' }}</strong>
             <span>{{ o.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
           </div>
 
