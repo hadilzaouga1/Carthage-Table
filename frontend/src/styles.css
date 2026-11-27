@@ -164,10 +164,14 @@ img { max-width: 100%; display: block; }
 .search-box .field { padding-left: 46px; }
 .password-wrap { position: relative; display: flex; align-items: center; }
 .password-wrap .field { padding-right: 46px; }
+.password-wrap app-password-toggle {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  display: inline-flex; align-items: center; justify-content: center; line-height: 0;
+}
 .password-toggle {
-  position: absolute; right: 12px; background: transparent; border: 0;
+  background: transparent; border: 0;
   color: var(--muted-foreground); cursor: pointer; padding: 4px;
-  display: inline-flex; align-items: center; justify-content: center;
+  display: inline-flex; align-items: center; justify-content: center; line-height: 0;
 }
 .password-toggle:hover { color: var(--foreground); }
 .check-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; white-space: nowrap; }
